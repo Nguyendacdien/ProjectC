@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2></h2>
+    <div class="table-responsive my-recipes-table">
+        <table class="table" style="margin-top: 40px;">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Upvotes</th>
+                    <th>Downvotes</th>
+                    <th>Country</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for recipe in recipes %}
+                <tr>
+                    <td>{{ recipe.name }}</td>
+                    <td>{{ recipe.upvotes }}</td>
+                    <td>{{ recipe.downvotes }}</td>
+                    <td>{{ recipe.country }}</td>
+                    <td>
+                        <a href="{{ url_for('view_recipe', username=username, recipe_id=recipe.recipeID) }}" class="btn btn-info btn-sm">View</a>
+                        <a href="{{ url_for('edit_recipe', username=username, recipe_id=recipe.recipeID) }}" class="btn btn-warning btn-sm">Edit</a>
+                        <a href="{{ url_for('delete_recipe', username=username, recipe_id=recipe.recipeID) }}" class="btn btn-danger btn-sm">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+

@@ -1,0 +1,339 @@
+/*.................................GENERAL */
+
+body {
+  /* Styles for site background and fonts */
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: url('/static/img/header-min.png') no-repeat center center fixed;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  background-size: cover;
+  -o-background-size: cover;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+hr {
+  /* Styles for hr element controlling width and border */
+
+  max-width: 50px;
+  border-width: 3px;
+  border-color: #F05F40;
+}
+
+hr.light {
+  /* Styles for hr element controlling color */
+  
+  border-color: #fff;
+}
+
+a {
+  /* styles for tranisitons on links */
+  
+  -webkit-transition: all 0.2s;
+  -moz-transition: all 0.2s;
+  transition: all 0.2s;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  /* fonts for headings */
+
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+th {
+   /* styles table heading */
+   
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+::-moz-selection {
+  /* selection styles */
+  
+  color: #fff;
+  background: #212529;
+  text-shadow: none;
+}
+
+::selection {
+  /* selection styles */
+  
+  color: #fff;
+  background: #212529;
+  text-shadow: none;
+}
+
+/*.................................NAVBAR */
+
+#mainNav {
+  /* Navbar font and border styles  */
+  
+  border-bottom: 1px solid rgba(33, 37, 41, 0.1);
+  background-color: #fff;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  -webkit-transition: all 0.2s;
+  -moz-transition: all 0.2s;
+  transition: all 0.2s;
+}
+
+#mainNav .navbar-brand {
+  /* navbar site logo section font styles */
+  
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #F05F40;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+#mainNav .navbar-brand:focus,
+#mainNav .navbar-brand:hover {
+  /* navbar site logo hover and focus styles */
+   
+  color: #f05f40;
+}
+
+#mainNav .navbar-nav>li.nav-item>a.nav-link,
+#mainNav .navbar-nav>li.nav-item>a.nav-link:focus {
+  /* navbar site links styles */
+  
+  font-size: .9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #212529;
+}
+
+#mainNav .navbar-nav>li.nav-item>a.nav-link:hover,
+#mainNav .navbar-nav>li.nav-item>a.nav-link:focus:hover {
+  /* navbar site links hover and focus styles */
+  
+  color: #F05F40;
+}
+
+/*.................................HOME PAGE */
+
+header.masthead {
+  /* padding styles */
+  
+  padding-top: 11.5em;
+}
+
+header.masthead h1 {
+  /* font size */
+  
+  font-size: 2rem;
+}
+
+header.masthead p {
+  /* font weight */
+  
+  font-weight: 300;
+}
+
+/*.................................BUTTONS */
+
+.btn {
+  /* styles button element removes border, set font */
+  
+  font-weight: 700;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 300px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.btn-xl {
+  /* larger button then regular btn */
+  
+  padding: 1rem 2rem;
+}
+
+.btn.btn-square {
+  /* a square shaped button */
+  
+  border-radius: 0;
+}
+
+/*.................................ADD/EDIT RECIPE PAGE */
+
+#ins-remove {
+  /* default setting for the remove instruction button */
+  
+  display: none;
+}
+
+#ing-remove {
+  /* default setting for the remove ingredient button */
+
+  display: none;
+}
+
+#allerg-remove {
+  /* default setting for the remove allergen button */
+
+  display: none;
+}
+
+/*.................................VIEW RECIPE PAGE */
+
+#ingredients-list {
+  /* remove list styling */
+
+  list-style-type: none;
+}
+
+.viewdiv {
+  /* set padding */
+
+  padding-top: 2rem;
+}
+
+.topdiv {
+  /* set padding */
+  
+  padding-top: 5rem;
+}
+
+.vote {
+  /* hide elements in this class */
+  
+  display: none;
+}
+
+#formUpvote {
+  /* set the element to display next to other elements with inline-block */
+  
+    display: inline-block; 
+}
+#formDownvote {
+  /* set the element to display next to other elements with inline-block */
+  
+    display: inline-block; 
+}
+
+/*.................................RECIPE TABLES */
+
+.recipe-page {
+  /* set padding */
+  
+  padding-top: 5em;
+
+}
+
+.sortButton {
+  /* enable the user to know the button is clickable via cursor feedback */
+  
+  cursor: pointer;
+}
+
+#sortDefault {
+  /* default setting for the sort default table */
+  
+  display: inline-block;
+}
+
+#sortAuthor {
+  /* default setting for the sort author table */
+  
+  display: none;
+}
+
+#sortName{
+  /* default setting for the sort name table */
+  
+  display: none;
+}
+
+#sortUpvotes{
+  /* default setting for the sort upvotes table */
+  
+  display: none;
+}
+
+#sortDownvotes {
+  /* default setting for the sort downvotes table */
+  
+  display: none;
+}
+
+#sortCountry {
+  /* default setting for the sort country table */
+  
+  display: none;
+}
+
+/*.................................MEDIA QUERIES */
+
+@media (min-width: 768px) {
+  
+  header.masthead p {
+    /* set font size */
+    
+    font-size: 1.15rem;
+  }
+}
+
+@media (min-width: 992px) {
+
+  /* Navbar */
+  
+  #mainNav {
+    /* set navbar background to be transparent */
+    
+    border-color: transparent;
+    background-color: transparent;
+  }
+  #mainNav .navbar-brand {
+    /* set color of navbar brand */
+    
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  #mainNav .navbar-brand:focus,
+  #mainNav .navbar-brand:hover {
+    /* set color of navbar brand when hovered/focused on */
+    
+    color: #fff;
+  }
+  
+  #mainNav .navbar-nav>li.nav-item>a.nav-link {
+     /* set padding between nav-links */
+     
+    padding: 0.5rem 1rem;
+  }
+  
+  #mainNav .navbar-nav>li.nav-item>a.nav-link,
+  #mainNav .navbar-nav>li.nav-item>a.nav-link:focus {
+     /* set color of nav-links */
+     
+    color: rgba(255, 255, 255, 0.7);
+  }
+  #mainNav .navbar-nav>li.nav-item>a.nav-link:hover,
+  #mainNav .navbar-nav>li.nav-item>a.nav-link:focus:hover {
+    /* set color of nav-links upon interaction */
+    
+    color: #fff;
+  }
+  
+  /* Home Page */
+  
+  header.masthead h1 {
+    /* set font size */
+    
+    font-size: 3rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  header.masthead h1 {
+    /* set font size */
+     
+    font-size: 4rem;
+  }
+}
