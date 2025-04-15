@@ -1,76 +1,88 @@
-{% extends "base.html"%} {% block content %}
+{% extends "base.html" %}
 
-<div class="container-full-bg">
-    <div class="jumbotron ">
-        <div class="container">
-            <div class="row recipe-page topdiv" id="name">
-                <div class="col-lg-12 mx-auto">
-                    <h2 class="text ">
-                        <strong>{{recipe.name.title()}}</strong>
-                    </h2>
-                </div>
-                <div class="col-lg-12 mx-auto">
-                    <p class="text lead">
-                        {{recipe.description}}
-                    </p>
-                </div>
-            </div>
-            <div class="row viewdiv" id="instructions">
-                <div class='col-lg-12 mx-auto'>
-                    <h4><strong>Instructions</strong></h4>
-                    {% for key in recipe.instructions %}
-                    <h6><strong>Step {{loop.index}}</strong></h6>
-                    <p class="text lead"> {{ key }}</p>
-                    {% endfor %}
-                </div>
-            </div>
-            <div class="row viewdiv" id="allergens">
-                <div class='col-lg-12 mx-auto'>
-                    <h4><strong>Allergens</strong></h4>
-                    <p class="text lead">
-                        {% for key in recipe.allergens %} {{ key }} {% endfor %}
-                    </p>
-                </div>
-            </div>
-      
-            <div class="row viewdiv" id="ingredients">
-                <div class='col-lg-12 mx-auto'>
-                    <h4><strong>Ingredients</strong></h4>
-                    <ul class="list-unstyled" id="ingredients-list">
-                        {% for key in recipe.ingredients %}
-                        <li class="text lead">{{ key }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-            <div class="row viewdiv" id="country">
-                <div class="col-lg-12">
-                    <h4><strong>Country of Origin</strong></h4>
-                    <p class="text lead">{{recipe.country.title()}}</p>
-                </div>
-            </div>
-            <div class="row viewdiv" id="author">
-                <div class="col-lg-12">
-                    <h4><strong>Author</strong></h4>
-                    <p class="text lead">{{recipe.author.title()}}</p>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-6">
-                    <form method="POST" id="formUpvote">
-                        <input class="btn btn-success vote" type="submit" name="vote" value="upvote" hidden></input>
-                        <button class="btn btn-success" type="submit " name="vote" value="upvote"><i class="fa fa-thumbs-up"></i></button>
-                    </form>
+{% block content %}
+<div class="container my-5">
+    <!-- Recipe Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="fw-bold" style="color: #ffffff;">{{ recipe.name.title() }}</h2>
+            <p style="color: #ffffff;">{{ recipe.description }}</p>
+        </div>
+        <!-- Màu xám #333333 -->
+        <!-- Dropdown Menu -->
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fa fa-ellipsis-v"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" style="background-color: #333333;">
+                <li><a class="dropdown-item" href="{{ url_for('edit_recipe', username=username, recipe_id=recipe.recipeID) }}" style="color: #ffffff;" onmouseover="this.style.backgroundColor='#e9ecef'; this.style.color='#000000';" onmouseout="this.style.backgroundColor=''; this.style.color='#ffffff';">Edit</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('delete_recipe', username=username, recipe_id=recipe.recipeID) }}" onclick="return confirm('Delete this recipe?')" style="color: #ffffff;" onmouseover="this.style.backgroundColor='#e9ecef'; this.style.color='#000000';" onmouseout="this.style.backgroundColor=''; this.style.color='#ffffff';">Delete</a></li>
+            </ul>
+        </div>
+    </div>
 
-                    <form method="POST" id="formDownvote">
-                        <input class="btn btn-danger vote" type="submit " name="vote" value="downvote"><i class="fa fa-thumbs-down" hidden></i></input>
-                        <button class="btn btn-danger" type="submit " name="vote" value="downvote"><i class="fa fa-thumbs-down"></i></button>
-                    </form>
+    <!-- Instructions -->
+    <div class="card mb-4 shadow-sm" style="background-color: #2E3856; color: #ffffff;">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fa fa-book-open me-2"></i><strong>Instructions</strong></h5>
+            {% for step in recipe.instructions %}
+                <p><strong>Step {{ loop.index }}:</strong> {{ step }}</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Ingredients -->
+    <div class="card mb-4 shadow-sm" style="background-color: #2E3856; color: #ffffff;">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fa fa-carrot me-2"></i><strong>Ingredients</strong></h5>
+            <ul class="list-unstyled">
+                {% for ingredient in recipe.ingredients %}
+                    <li>- {{ ingredient }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Allergens -->
+    <div class="card mb-4 shadow-sm" style="background-color: #2E3856; color: #ffffff;">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fa fa-allergies me-2"></i><strong>Allergens</strong></h5>
+            <p>{{ recipe.allergens | join(', ') }}</p>
+        </div>
+    </div>
+
+    <!-- Country and Author -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4 shadow-sm" style="background-color: #2E3856; color: #ffffff;">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fa fa-flag me-2"></i><strong>Country of Origin</strong></h5>
+                    <p>{{ recipe.country.title() }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4 shadow-sm" style="background-color: #2E3856; color: #ffffff;">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fa fa-user me-2"></i><strong>Author</strong></h5>
+                    <p>{{ recipe.author.title() }}</p>
                 </div>
             </div>
         </div>
     </div>
-</div>
-<script src="/static/js/jquery.js"></script>
 
+    <!-- Voting Buttons -->
+    <div class="d-flex justify-content-start align-items-center gap-3 mt-3">
+        <form method="POST" id="formUpvote">
+            <button class="btn btn-success" type="submit" name="vote" value="upvote">
+                <i class="fa fa-thumbs-up"></i>
+            </button>
+        </form>
+        <form method="POST" id="formDownvote">
+            <button class="btn btn-danger" type="submit" name="vote" value="downvote">
+                <i class="fa fa-thumbs-down"></i>
+            </button>
+        </form>
+    </div>
+</div>
 {% endblock %}

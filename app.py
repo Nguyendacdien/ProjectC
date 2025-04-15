@@ -1,4 +1,5 @@
 import os
+import json
 from os import environ
 from flask import Flask, render_template, redirect, request, url_for, jsonify, flash
 from flask_pymongo import PyMongo, pymongo
@@ -130,16 +131,22 @@ def recipes(username):
 
     # Thêm điều kiện is_public: true vào các truy vấn sort
     sort_default = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("_id", 1)]).limit(limit)
-    sort_country = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("country", 1), ("name", 1)]).limit(limit)
     sort_name = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("name", 1)]).limit(limit)
     sort_upvotes = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("upvotes", pymongo.DESCENDING), ("name", 1)]).limit(limit)
     sort_downvotes = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("downvotes", pymongo.DESCENDING), ("name", 1)]).limit(limit)
     sort_author = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("author", 1), ("name", 1)]).limit(limit)
 
+    # Đọc dữ liệu từ countries.json
+    with open('data/countries.json', 'r', encoding='utf-8') as f:
+        countries_data = json.load(f)
+    
+    # Lấy danh sách tên quốc gia (bỏ mục đầu tiên "Choose a Country of Origin")
+    countries = [country['name'] for country in countries_data if country['name'] != "Choose a Country of Origin"]
+
     return render_template("recipes.html", author=sort_author,
                            default=sort_default, name=sort_name, upvotes=sort_upvotes,
-                           downvotes=sort_downvotes, country=sort_country, url_list=url_list,
-                           pages=pages, username=username)
+                           downvotes=sort_downvotes, url_list=url_list,
+                           pages=pages, username=username, countries=countries)
 
 #tạo route my recipes
 @app.route('/<username>/my_recipes')
@@ -150,6 +157,7 @@ def my_recipes(username):
 
     recipes = mongo.db.recipes
     user_recipes = recipes.find({"author": username})
+    
 
     return render_template("my_recipes.html", recipes=user_recipes, username=username)
 
