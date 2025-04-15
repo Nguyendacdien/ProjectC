@@ -1,44 +1,112 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html>
 
-{% block title %}Login{% endblock %}
+<head>
+    <title>Login</title>
+    <link rel="stylesheet" href="login.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 
-{% block content %}
-<div class="container-full-bg" style="background-image: url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80'); background-size: cover; min-height: 100vh; display: flex; align-items: center;">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-4">
-                <div class="card shadow-lg p-4" style="background-color: rgba(255, 255, 255, 0.9); border-radius: 15px;">
-                    <h2 class="text-center mb-4 text-uppercase fw-bold">Login</h2>
+</head>
+
+<body>
+    <div class="page"
+        style="background-image: url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80'); background-size: cover; min-height: 100vh; display: flex; align-items: center;">
+        <div class="container">
+            <div class="left">
+                <div class="login">Login</div>
+                <div class="eula">
+                    <p>Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
+                </div>
+            </div>
+            <div class="right">
+                <svg viewBox="0 0 320 300">
+                    <defs>
+                        <linearGradient inkscape:collect="always" id="linearGradient" x1="13" y1="193.49992" x2="307"
+                            y2="193.49992" gradientUnits="userSpaceOnUse">
+                            <stop style="stop-color:#ff00ff;" offset="0" id="stop876" />
+                            <stop style="stop-color:#ff0000;" offset="1" id="stop878" />
+                        </linearGradient>
+                    </defs>
+                    <path
+                        d="m 40,120.00016 239.99984,-3.2e-4 c 0,0 24.99263,0.79932 25.00016,35.00016 0.008,34.20084 -25.00016,35 -25.00016,35 h -239.99984 c 0,-0.0205 -25,4.01348 -25,38.5 0,34.48652 25,38.5 25,38.5 h 215 c 0,0 20,-0.99604 20,-25 0,-24.00396 -20,-25 -20,-25 h -190 c 0,0 -20,1.71033 -20,25 0,24.00396 20,25 20,25 h 168.57143" />
+                </svg>
+                <div class="form">
                     <form method="POST">
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" required>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
-                            </div>
-                        </div>
-                        <div class="d-grid mb-3">
-                            <button type="submit" class="btn btn-primary btn-block" style="background-color: #28a745; border-color: #28a745; transition: background-color 0.3s;">Login</button>
-                        </div>
-                        <p class="text-center">Don't have an account? <a href="{{ url_for('register') }}" class="text-primary">Register</a></p>
+                        <label for="username">Username:</label><br>
+                        <input type="text" name="username" id="username" required>
+
+                        <label for="password">Password:</label><br>
+                        <input type="password" name="password" id="password" required>
+
+                        <input type="submit" id="submit" value="Submit">
                     </form>
+
+                    <!-- {% with messages = get_flashed_messages() %}
+          {% if messages %}
+          <ul>
+            {% for msg in messages %}
+            <li>{{ msg }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          {% endwith %} -->
+
+
                 </div>
             </div>
         </div>
     </div>
-</div>
+</body>
+<script>
+    var current = null;
+    document.querySelector('#username').addEventListener('focus', function (e) {
+        if (current) current.pause();
+        current = anime({
+            targets: 'path',
+            strokeDashoffset: {
+                value: 0,
+                duration: 700,
+                easing: 'easeOutQuart'
+            },
+            strokeDasharray: {
+                value: '240 1386',
+                duration: 700,
+                easing: 'easeOutQuart'
+            }
+        });
+    });
+    document.querySelector('#password').addEventListener('focus', function (e) {
+        if (current) current.pause();
+        current = anime({
+            targets: 'path',
+            strokeDashoffset: {
+                value: -336,
+                duration: 700,
+                easing: 'easeOutQuart'
+            },
+            strokeDasharray: {
+                value: '240 1386',
+                duration: 700,
+                easing: 'easeOutQuart'
+            }
+        });
+    });
+    document.querySelector('#submit').addEventListener('focus', function (e) {
+        if (current) current.pause();
+        current = anime({
+            targets: 'path',
+            strokeDashoffset: {
+                value: -730,
+                duration: 700,
+                easing: 'easeOutQuart'
+            },
+            strokeDasharray: {
+                value: '530 1386',
+                duration: 700,
+                easing: 'easeOutQuart'
+            }
+        });
+    });
+</script>
 
-<style>
-    .btn-primary:hover {
-        background-color: #218838 !important;
-        border-color: #218838 !important;
-    }
-</style>
-{% endblock %}
+</html>
