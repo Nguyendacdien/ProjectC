@@ -12,7 +12,6 @@ from wtforms import StringField, SelectField, TextAreaField, validators, SubmitF
 from forms import Username, ReusableForm, Search
 from flask import session
 
-
 load_dotenv(find_dotenv())
 
 app = Flask(__name__)
@@ -49,7 +48,7 @@ def register():
         flash('Registration successful. Please log in.')
         return redirect(url_for('login'))
 
-    return render_template('register.html')
+    return render_template('login.html')
 
 
 @app.route('/login', methods=['GET', 'POST'])
