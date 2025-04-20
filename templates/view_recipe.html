@@ -86,3 +86,17 @@
     </div>
 </div>
 {% endblock %}
+<!-- Flash Messages -->
+<div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            {{ message }}
+            <span class="close-btn" onclick="this.parentElement.style.display='none';">&times;</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+  

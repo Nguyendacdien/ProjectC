@@ -201,10 +201,14 @@
             <div class="row mt-4">
                 <div class="col-12 text-center">
                     {% for x in range(pages) %}
-                    <a class="btn btn-square btn-info mx-1" href="{{ url_list[loop.index - 1] }}" name="action">{{ loop.index }}</a>
+                    <a 
+                        class="pagination-btn {% if loop.index == current_page %}active{% endif %}" 
+                        href="{{ url_list[loop.index - 1] }}">
+                        {{ loop.index }}
+                    </a>
                     {% endfor %}
                 </div>
-            </div>
+            </div>            
         </div>
     </div>
 </div>
@@ -234,3 +238,5 @@
     }
 </script>
 {% endblock %}
+
+  

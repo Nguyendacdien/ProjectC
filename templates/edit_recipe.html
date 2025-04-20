@@ -42,7 +42,7 @@
                     </div>
                     {% for instruction in recipe.instructions[1:] %}
                     <div class="col-md-6 mb-3" id="ins{{ loop.index + 1 }}">
-                        <label class="text-white">Step {{ loop.index + 1 }}:</label>
+                        <label class="form-label text-white">Step {{ loop.index + 1 }}:</label>
                         <input name="instruction2" type="text" class="form-control instructionClass" placeholder="Please Enter The Instructions One At A Time" value="{{ instruction | safe }}" autocomplete="off">
                     </div>
                     {% endfor %}

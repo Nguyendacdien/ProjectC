@@ -265,10 +265,12 @@ def add_recipe(username):
  
 @app.route('/<username>/edit_recipe/<recipe_id>', methods=['GET', 'POST'])
 def edit_recipe(username, recipe_id):
-    if 'username' not in session or session['username'] != username:
-        flash('Please log in first.', 'error')
+    if 'username' not in session:
+        flash('Vui long đăng nhập trước', 'error')
         return redirect(url_for('login'))
-
+    if session['username'] != username:
+        flash('Bạn không thể chỉnh sửa công thức của người khác', 'error')
+        return redirect(url_for('recipes', username = session['username']))
     # Lấy công thức
     the_recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id), "author": username})
     if not the_recipe:
@@ -332,9 +334,12 @@ def edit_recipe(username, recipe_id):
 
 @app.route('/<username>/delete_recipe/<recipe_id>', methods=['GET'])
 def delete_recipe(username, recipe_id):
-    if 'username' not in session or session['username'] != username:
-        flash('Please log in first.', 'error')
+    if 'username' not in session:
+        flash('Vui lòng đăng nhập trước.', 'error')
         return redirect(url_for('login'))
+    if session['username'] != username:
+        flash('Bạn không thể chỉnh sửa công thức của người khác.', 'error')
+        return redirect(url_for('recipes', username=session['username']))
 
     # Lấy công thức để kiểm tra quyền
     recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id), "author": username})

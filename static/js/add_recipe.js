@@ -14,14 +14,20 @@
     }
 
     function add_more_instructions() {
-        //When the add button is pressed add a field
         i++;
-        $(".instructions").append("<br><div  id='ins" + i + "' class='col-md-6 mb-3'><label>Step " + i + ":</label><input name= 'instruction" + i + "' type='text' class='form-control instructionClass' placeholder='Please Enter The Instructions One At A Time' </div>");
-
+        $(".instructions").append(`
+            <br>
+            <div id='ins${i}' class='col-md-6 mb-3'>
+                <label class="text-white">Step ${i}:</label>
+                <input name='instruction2' type='text' class='form-control instructionClass' placeholder='Please Enter The Instructions One At A Time' autocomplete="off">
+            </div>
+        `);
+    
         if (i > 1) {
             $("#ins-remove").css("display", "inline-block");
         }
     }
+    
 
     function remove_instructions() {
         //When the delete button is pressed delete a field
