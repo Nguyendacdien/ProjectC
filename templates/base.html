@@ -21,66 +21,65 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <meta name="description" content="An Online Cookbook">
-  <meta name="author" content="Cian O' Gralaigh">
-
   <title>Digital Cookbook</title>
 </head>
 
-  <body>
-
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
-      <div class="container">
-        <a class="navbar-brand js-scroll-trigger" href="/">Digital Cookbook</a>
-        <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarResponsive">
-          <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('my_recipes', username=username) }}">My Recipes</a>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
+    <div class="container">
+      <a class="navbar-brand js-scroll-trigger" href="/logout">Digital Cookbook</a>
+      <!-- Search bar -->
+      <form class="d-flex mx-auto" action="{{ url_for('search', username=username) }}" method="GET" style="max-width: 800px;">
+        <input class="form-control me-2" type="search" name="query" placeholder="Tìm kiếm công thức..." aria-label="Search">
+        <button class="btn btn-outline-success" type="submit"><i class="fas fa-search"></i></button>
+      </form>
+      <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarResponsive">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('my_recipes', username=username) }}">My Recipes</a>
           </li>
-            <li class="nav-item">
-              <a class="nav-link js-scroll-trigger" href="/{{username}}/recipes?limit=10&offset=0">View Recipes</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link js-scroll-trigger" href="{{url_for('add_recipe', username=username)}}">Add Recipe</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link js-scroll-trigger" href="{{url_for('search', username=username)}}">Search</a>
-            </li>
-          </ul>
-        </div>
+          <li class="nav-item">
+            <a class="nav-link js-scroll-trigger" href="/{{username}}/recipes?limit=10&offset=0">View Recipes</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link js-scroll-trigger" href="{{url_for('add_recipe', username=username)}}">Add Recipe</a>
+          </li>
+        </ul>
       </div>
-    </nav>
+    </div>
+  </nav>
 
-    {% block content %} {% endblock %}
-    {% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-<div class="container mt-3">
+  {% block content %} {% endblock %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="container mt-3">
     {% for category, message in messages %}
     <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-            <span aria-hidden="true">×</span>
-        </button>
+      {{ message }}
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">×</span>
+      </button>
     </div>
     {% endfor %}
-</div>
-{% endif %}
-{% endwith %}
+  </div>
+  {% endif %}
+  {% endwith %}
 
-    <!-- Bootstrap JS -->
-    <script src="/static/js/jquery.js"></script>
-    <script src="/static/js/bootstrap.js"></script>
+  <!-- Bootstrap JS -->
+  <script src="/static/js/jquery.js"></script>
+  <script src="/static/js/bootstrap.js"></script>
 
-    <!-- Plugin JS -->
-    <script src="/static/js/jquery.easing.js"></script>
-    <script src="/static/js/scrollreveal.js"></script>
-    <script src="/static/js/jquery.magnific-popup.js"></script>
+  <!-- Plugin JS -->
+  <script src="/static/js/jquery.easing.js"></script>
+  <script src="/static/js/scrollreveal.js"></script>
+  <script src="/static/js/jquery.magnific-popup.js"></script>
 
-    <!-- Theme JS  -->
-    <script src="/static/js/creative.js"></script>
-  </body>
+  <!-- Theme JS -->
+  <script src="/static/js/creative.js"></script>
+</body>
 
 </html>

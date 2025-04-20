@@ -161,56 +161,50 @@ def my_recipes(username):
     return render_template("my_recipes.html", recipes=user_recipes, username=username)
 
 
-@app.route('/<username>/search', methods=['GET','POST'])
+    
+@app.route('/<username>/search', methods=['GET'])
 def search(username):
-    #Search User Input
-        wtform = Search(request.form)
-        if wtform.validate():
-            return redirect('/' + username + '/' + 'search' + '/' + request.form["search"] + '?limit=10&offset=0')
-        return render_template("search.html", username=username, form=wtform, errors=wtform.errors )
+    # Lấy tham số query, limit, offset từ yêu cầu GET
+    query = request.args.get('query', '').strip()
+    try:
+        limit = int(request.args.get('limit', 10))  # Mặc định 10 kết quả/trang
+        offset = int(request.args.get('offset', 0))  # Mặc định bắt đầu từ 0
+    except ValueError:
+        limit = 10
+        offset = 0
     
-@app.route('/<username>/search/<search>', methods=['GET','POST'] )
-def results(username, search):
-    
-    # Get All Recipes
+    # Truy vấn MongoDB
     recipes = mongo.db.recipes
-    found_recipes = recipes.find({"$text": {"$search": str(search)}})
+    search_query = {"$text": {"$search": query}} if query else {}
     
-    # Pagination Settings
-    limit = int(request.args.get('limit'))
-    offset = 0 
+    # Nếu không có query, trả về trang rỗng
+    if not query:
+        return render_template('search_results.html', username=username, recipes=[], query=query, count=0, pages=0, url_list=[])
     
-    #Get Count
-    count_list = []
-    for doc in found_recipes:
-        count_list.append(doc)
-        count = len(count_list)
+    # Đếm tổng số kết quả
+    count = recipes.count_documents(search_query)
     
-    #If No Results Found
-    if len(count_list) < 1 or not search:
-        return render_template('noresults.html', username=username)
-    
-    #Get Pages And Generate URL List
+    # Tính số trang và tạo liên kết phân trang
     pages = get_pages(count, limit)
-    url_list = generate_pagination_links(offset, limit, pages, 'search', search, username)
-
-    #Get _id of Last Item on a Page
-    dynamic_position = request.args.get('offset')
-    starting_id = recipes.find({"$text": {"$search": str(search)}}).sort('_id')
-    last_id = starting_id[int(dynamic_position)]['_id']
+    url_list = generate_pagination_links(offset, limit, pages, 'search', query, username)
     
-    #Sort Tables
-    sort_default = recipes.find({"$and":[{'_id':{'$gte' : last_id}},{"$text":{"$search": str(search)}}]}).sort([('_id',pymongo.DESCENDING)]).limit(limit)
-    sort_country = recipes.find({"$and":[{'_id':{'$gte' : last_id}},{"$text":{"$search": str(search)}}]}).sort([("country",1),("name",1 )]).limit(limit)
-    sort_name = recipes.find({"$and":[{'_id':{'$gte' : last_id}},{"$text":{"$search": str(search)}}]}).sort([("name", 1)]).limit(limit)
-    sort_upvotes = recipes.find({"$and":[{'_id':{'$gte' : last_id}},{"$text":{"$search": str(search)}}]}).sort([("upvotes",
-    pymongo.DESCENDING),("name",1 )]).limit(limit)
-    sort_downvotes = recipes.find({"$and":[{'_id':{'$gte' : last_id}},{"$text":{"$search": str(search)}}]}).sort([("downvotes",pymongo.DESCENDING),("name",1 )]).limit(limit)
-    sort_author = recipes.find({"$and":[{'_id':{'$gte' : last_id}},{"$text":{"$search": str(search)}}]}).sort([("author",1),("name",1 )]).limit(limit)
-
-    return render_template("results.html", default=sort_default, count=count, 
-    url_list=url_list, pages=pages, search=search, country=sort_country, name=sort_name, 
-    upvotes=sort_upvotes, downvotes=sort_downvotes, author=sort_author, username=username)
+    # Lấy danh sách công thức cho trang hiện tại
+    found_recipes = recipes.find(search_query).sort('_id', pymongo.DESCENDING).skip(offset).limit(limit)
+    
+    # Chuyển cursor thành list để truyền vào template
+    recipes_list = list(found_recipes)
+    
+    return render_template(
+        'search_results.html',
+        username=username,
+        recipes=recipes_list,
+        query=query,
+        count=count,
+        pages=pages,
+        url_list=url_list,
+        limit=limit,
+        offset=offset
+    )
 
 @app.route('/<username>/add_recipe',methods=['GET','POST']  )
 def add_recipe(username):
@@ -380,8 +374,8 @@ def view_recipe(username, recipe_id):
             upvote = current[0]['upvotes'] + 1
             
             #Update Field
-            recipes.update({'recipeID': int(recipe_id) },{ '$set':{ 'upvotes' : upvote}})
-    
+            recipes.update_one({'recipeID': int(recipe_id) },{ '$set':{ 'upvotes' : upvote}})
+            flash('Đã tăng lượt thích!', 'success')
             return redirect('/' + username + '/recipes?limit=10&offset=0')
          
         #If Downvote 
@@ -391,8 +385,8 @@ def view_recipe(username, recipe_id):
             downvote = current[0]['downvotes'] + 1
             
             #Update Field
-            recipes.update( {'recipeID': int(recipe_id) }, { '$set': { 'downvotes' : downvote } } )
-            
+            recipes.update_one( {'recipeID': int(recipe_id) }, { '$set': { 'downvotes' : downvote } } )
+            flash('Đã tăng lượt không thích!', 'success')
             return redirect('/' + username + '/recipes?limit=10&offset=0')
          
     return render_template('view_recipe.html', recipe=the_recipe, username=username) 

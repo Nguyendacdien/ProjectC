@@ -387,3 +387,9 @@ header.masthead p {
 .country-filter {
   width: 200px; /* Điều chỉnh chiều rộng ô nhập liệu nếu cần */
 }
+/*Thanh searchsearch*/
+@media (max-width: 992px) {
+  .navbar form {
+    max-width: 100%;
+  }
+}
