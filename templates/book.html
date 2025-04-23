@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Đọc sách: {{ book.title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f9f9f9;
+            padding: 20px;
+            color: #333;
+        }
+
+        a.back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #555;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .page {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .page img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-number {
+            margin-top: 5px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="{{ url_for('books') }}" class="back">← Quay về danh sách sách</a>
+    <h1>{{ book.title }}</h1>
+
+    {% for p in book.pages %}
+    <div class="page">
+        <img src="..{{ p.image_url }}" alt="Page {{ p.page_number }}"
+            onerror="this.src='/static/images/default_cover.jpg'">
+        <div class="page-number">Trang {{ p.page_number }}</div>
+    </div>
+    {% endfor %}
+</body>
+
+</html>

@@ -105,6 +105,18 @@ def user_index(username):
     
 #     return render_template("index.html", form=wtform, errors=wtform.errors)
     
+@app.route('/books', methods=['GET'])
+def books():
+    books_collection = mongo.db.books
+    books_list = list(books_collection.find())  
+    return render_template('book_list.html', books=books_list)  
+@app.route('/books/<book_id>')
+def view_book(book_id):
+    book = mongo.db.books.find_one({ '_id': ObjectId(book_id) })
+    if not book:
+        return "Book not found", 404
+    return render_template('book.html', book=book) 
+
 @app.route('/<username>/recipes')
 def recipes(username):
     if 'username' not in session or session['username'] != username:
