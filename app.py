@@ -1,4 +1,5 @@
 import os
+import json
 from os import environ
 from flask import Flask, render_template, redirect, request, url_for, jsonify, flash
 from flask_pymongo import PyMongo, pymongo
@@ -11,6 +12,7 @@ from flask_wtf import FlaskForm, Form
 from wtforms import StringField, SelectField, TextAreaField, validators, SubmitField
 from forms import Username, ReusableForm, Search
 from flask import session
+from pymongo import MongoClient
 
 load_dotenv(find_dotenv())
 
@@ -81,7 +83,6 @@ def logout():
 @app.route('/')
 def index():
     return redirect(url_for('login'))
-
 @app.route('/<username>/user_index')
 def user_index(username):
     if 'username' not in session or session['username'] != username:
@@ -102,7 +103,17 @@ def user_index(username):
 #         return redirect('/' + request.form['username'] + '/recipes?limit=10&offset=0')
     
 #     return render_template("index.html", form=wtform, errors=wtform.errors)
-    
+@app.route('/books', methods=['GET'])
+def books():
+    books_collection = mongo.db.books
+    books_list = list(books_collection.find())  
+    return render_template('book_list.html', books=books_list)  
+@app.route('/books/<book_id>')
+def view_book(book_id):
+    book = mongo.db.books.find_one({ '_id': ObjectId(book_id) })
+    if not book:
+        return "Book not found", 404
+    return render_template('book.html', book=book) 
 @app.route('/<username>/recipes')
 def recipes(username):
     if 'username' not in session or session['username'] != username:
@@ -129,16 +140,22 @@ def recipes(username):
 
     # Thêm điều kiện is_public: true vào các truy vấn sort
     sort_default = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("_id", 1)]).limit(limit)
-    sort_country = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("country", 1), ("name", 1)]).limit(limit)
     sort_name = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("name", 1)]).limit(limit)
     sort_upvotes = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("upvotes", pymongo.DESCENDING), ("name", 1)]).limit(limit)
     sort_downvotes = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("downvotes", pymongo.DESCENDING), ("name", 1)]).limit(limit)
     sort_author = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("author", 1), ("name", 1)]).limit(limit)
 
+    # Đọc dữ liệu từ countries.json
+    with open('data/countries.json', 'r', encoding='utf-8') as f:
+        countries_data = json.load(f)
+    
+    # Lấy danh sách tên quốc gia (bỏ mục đầu tiên "Choose a Country of Origin")
+    countries = [country['name'] for country in countries_data if country['name'] != "Choose a Country of Origin"]
+
     return render_template("recipes.html", author=sort_author,
                            default=sort_default, name=sort_name, upvotes=sort_upvotes,
-                           downvotes=sort_downvotes, country=sort_country, url_list=url_list,
-                           pages=pages, username=username)
+                           downvotes=sort_downvotes, url_list=url_list,
+                           pages=pages, username=username, countries=countries)
 
 #tạo route my recipes
 @app.route('/<username>/my_recipes')
@@ -149,60 +166,55 @@ def my_recipes(username):
 
     recipes = mongo.db.recipes
     user_recipes = recipes.find({"author": username})
+    
 
     return render_template("my_recipes.html", recipes=user_recipes, username=username)
 
 
-@app.route('/<username>/search', methods=['GET','POST'])
+    
+@app.route('/<username>/search', methods=['GET'])
 def search(username):
-    #Search User Input
-        wtform = Search(request.form)
-        if wtform.validate():
-            return redirect('/' + username + '/' + 'search' + '/' + request.form["search"] + '?limit=10&offset=0')
-        return render_template("search.html", username=username, form=wtform, errors=wtform.errors )
+    # Lấy tham số query, limit, offset từ yêu cầu GET
+    query = request.args.get('query', '').strip()
+    try:
+        limit = int(request.args.get('limit', 10))  # Mặc định 10 kết quả/trang
+        offset = int(request.args.get('offset', 0))  # Mặc định bắt đầu từ 0
+    except ValueError:
+        limit = 10
+        offset = 0
     
-@app.route('/<username>/search/<search>', methods=['GET','POST'] )
-def results(username, search):
-    
-    # Get All Recipes
+    # Truy vấn MongoDB
     recipes = mongo.db.recipes
-    found_recipes = recipes.find({"$text": {"$search": str(search)}})
+    search_query = {"$text": {"$search": query}} if query else {}
     
-    # Pagination Settings
-    limit = int(request.args.get('limit'))
-    offset = 0 
+    # Nếu không có query, trả về trang rỗng
+    if not query:
+        return render_template('search_results.html', username=username, recipes=[], query=query, count=0, pages=0, url_list=[])
     
-    #Get Count
-    count_list = []
-    for doc in found_recipes:
-        count_list.append(doc)
-        count = len(count_list)
+    # Đếm tổng số kết quả
+    count = recipes.count_documents(search_query)
     
-    #If No Results Found
-    if len(count_list) < 1 or not search:
-        return render_template('noresults.html', username=username)
-    
-    #Get Pages And Generate URL List
+    # Tính số trang và tạo liên kết phân trang
     pages = get_pages(count, limit)
-    url_list = generate_pagination_links(offset, limit, pages, 'search', search, username)
-
-    #Get _id of Last Item on a Page
-    dynamic_position = request.args.get('offset')
-    starting_id = recipes.find({"$text": {"$search": str(search)}}).sort('_id')
-    last_id = starting_id[int(dynamic_position)]['_id']
+    url_list = generate_pagination_links(offset, limit, pages, 'search', query, username)
     
-    #Sort Tables
-    sort_default = recipes.find({"$and":[{'_id':{'$gte' : last_id}},{"$text":{"$search": str(search)}}]}).sort([('_id',pymongo.DESCENDING)]).limit(limit)
-    sort_country = recipes.find({"$and":[{'_id':{'$gte' : last_id}},{"$text":{"$search": str(search)}}]}).sort([("country",1),("name",1 )]).limit(limit)
-    sort_name = recipes.find({"$and":[{'_id':{'$gte' : last_id}},{"$text":{"$search": str(search)}}]}).sort([("name", 1)]).limit(limit)
-    sort_upvotes = recipes.find({"$and":[{'_id':{'$gte' : last_id}},{"$text":{"$search": str(search)}}]}).sort([("upvotes",
-    pymongo.DESCENDING),("name",1 )]).limit(limit)
-    sort_downvotes = recipes.find({"$and":[{'_id':{'$gte' : last_id}},{"$text":{"$search": str(search)}}]}).sort([("downvotes",pymongo.DESCENDING),("name",1 )]).limit(limit)
-    sort_author = recipes.find({"$and":[{'_id':{'$gte' : last_id}},{"$text":{"$search": str(search)}}]}).sort([("author",1),("name",1 )]).limit(limit)
-
-    return render_template("results.html", default=sort_default, count=count, 
-    url_list=url_list, pages=pages, search=search, country=sort_country, name=sort_name, 
-    upvotes=sort_upvotes, downvotes=sort_downvotes, author=sort_author, username=username)
+    # Lấy danh sách công thức cho trang hiện tại
+    found_recipes = recipes.find(search_query).sort('_id', pymongo.DESCENDING).skip(offset).limit(limit)
+    
+    # Chuyển cursor thành list để truyền vào template
+    recipes_list = list(found_recipes)
+    
+    return render_template(
+        'search_results.html',
+        username=username,
+        recipes=recipes_list,
+        query=query,
+        count=count,
+        pages=pages,
+        url_list=url_list,
+        limit=limit,
+        offset=offset
+    )
 
 @app.route('/<username>/add_recipe',methods=['GET','POST']  )
 def add_recipe(username):
@@ -263,10 +275,12 @@ def add_recipe(username):
  
 @app.route('/<username>/edit_recipe/<recipe_id>', methods=['GET', 'POST'])
 def edit_recipe(username, recipe_id):
-    if 'username' not in session or session['username'] != username:
-        flash('Please log in first.', 'error')
+    if 'username' not in session:
+        flash('Vui long đăng nhập trước', 'error')
         return redirect(url_for('login'))
-
+    if session['username'] != username:
+        flash('Bạn không thể chỉnh sửa công thức của người khác', 'error')
+        return redirect(url_for('recipes', username = session['username']))
     # Lấy công thức
     the_recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id), "author": username})
     if not the_recipe:
@@ -330,9 +344,12 @@ def edit_recipe(username, recipe_id):
 
 @app.route('/<username>/delete_recipe/<recipe_id>', methods=['GET'])
 def delete_recipe(username, recipe_id):
-    if 'username' not in session or session['username'] != username:
-        flash('Please log in first.', 'error')
+    if 'username' not in session:
+        flash('Vui lòng đăng nhập trước.', 'error')
         return redirect(url_for('login'))
+    if session['username'] != username:
+        flash('Bạn không thể chỉnh sửa công thức của người khác.', 'error')
+        return redirect(url_for('recipes', username=session['username']))
 
     # Lấy công thức để kiểm tra quyền
     recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id), "author": username})
@@ -372,8 +389,8 @@ def view_recipe(username, recipe_id):
             upvote = current[0]['upvotes'] + 1
             
             #Update Field
-            recipes.update({'recipeID': int(recipe_id) },{ '$set':{ 'upvotes' : upvote}})
-    
+            recipes.update_one({'recipeID': int(recipe_id) },{ '$set':{ 'upvotes' : upvote}})
+            flash('Đã tăng lượt thích!', 'success')
             return redirect('/' + username + '/recipes?limit=10&offset=0')
          
         #If Downvote 
@@ -383,8 +400,8 @@ def view_recipe(username, recipe_id):
             downvote = current[0]['downvotes'] + 1
             
             #Update Field
-            recipes.update( {'recipeID': int(recipe_id) }, { '$set': { 'downvotes' : downvote } } )
-            
+            recipes.update_one( {'recipeID': int(recipe_id) }, { '$set': { 'downvotes' : downvote } } )
+            flash('Đã tăng lượt không thích!', 'success')
             return redirect('/' + username + '/recipes?limit=10&offset=0')
          
     return render_template('view_recipe.html', recipe=the_recipe, username=username) 

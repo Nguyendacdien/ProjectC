@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f9f9f9;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #444;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            max-width: 900px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        li {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        li:hover {
+            transform: translateY(-5px);
+        }
+
+        img {
+            width: 100%;
+            height: auto;
+            max-height: 250px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-weight: bold;
+            font-size: 18px;
+            margin: 5px 0;
+        }
+
+        .author {
+            color: #666;
+            font-size: 14px;
+        }
+
+        p {
+            text-align: center;
+            color: #999;
+        }
+
+        a.back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>List of Books</h1>
+    <a href="{{ url_for('login') }}" class="back">← Quay về trang đăng nhập</a>
+    {% if books %}
+    <ul>
+        {% for book in books %}
+        <a href="{{ url_for('view_book', book_id=book._id) }}" style="text-decoration: none; color: inherit;">
+            <li>
+                <img src="..{{ book.cover_image }}" alt="Cover Image"
+                    onerror="this.src='/static/images/default_cover.jpg'">
+                <div class="title">{{ book.title }}</div>
+                <div class="author">{{ book.author }}</div>
+            </li>
+        </a>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No books found.</p>
+    {% endif %}
+</body>
+
+</html>
