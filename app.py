@@ -12,6 +12,7 @@ from flask_wtf import FlaskForm, Form
 from wtforms import StringField, SelectField, TextAreaField, validators, SubmitField
 from forms import Username, ReusableForm, Search
 from flask import session
+from flask_bcrypt import Bcrypt
 
 load_dotenv(find_dotenv())
 
@@ -110,30 +111,50 @@ def recipes(username):
         flash("Please log in first.")
         return redirect(url_for('login'))
 
-    recipes = mongo.db.recipes
-    # Thêm điều kiện is_public: true
-    all_recipes = recipes.find({"is_public": True}).sort("_id", 1)
+    recipes_collection = mongo.db.recipes
+    # Truy vấn tất cả công thức với is_public: True
+    all_recipes = recipes_collection.find({"is_public": True}).sort("_id", 1)
     recipe_list = list(all_recipes)
 
+    # Phân trang
     limit = request.args.get('limit', default=10, type=int)
     offset = request.args.get('offset', default=0, type=int)
-
+    
     count = len(recipe_list)
     pages = get_pages(count, limit)
     url_list = generate_pagination_links(offset, limit, pages, 'recipes', 'null', username)
 
-    starting_position = request.args.get('offset', default=0, type=int)
+    # Lấy last_id để phân trang
+    starting_position = offset
     if recipe_list and starting_position < count:
         last_id = recipe_list[starting_position]['_id']
     else:
         last_id = None
 
-    # Thêm điều kiện is_public: true vào các truy vấn sort
-    sort_default = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("_id", 1)]).limit(limit)
-    sort_name = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("name", 1)]).limit(limit)
-    sort_upvotes = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("upvotes", pymongo.DESCENDING), ("name", 1)]).limit(limit)
-    sort_downvotes = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("downvotes", pymongo.DESCENDING), ("name", 1)]).limit(limit)
-    sort_author = recipes.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("author", 1), ("name", 1)]).limit(limit)
+    # Tạo 5 danh sách công thức đã sắp xếp
+    sort_default = list(recipes_collection.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("_id", 1)]).limit(limit))
+    sort_name = list(recipes_collection.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("name", 1)]).limit(limit))
+    sort_upvotes = list(recipes_collection.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("upvotes", pymongo.DESCENDING), ("name", 1)]).limit(limit))
+    sort_downvotes = list(recipes_collection.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("downvotes", pymongo.DESCENDING), ("name", 1)]).limit(limit))
+    sort_author = list(recipes_collection.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("author", 1), ("name", 1)]).limit(limit))
+
+    # Kiểm tra và gán đường dẫn ảnh cho từng công thức trong các danh sách
+    for sort_list in [sort_default, sort_name, sort_upvotes, sort_downvotes, sort_author]:
+        for recipe in sort_list:
+            avatar_path = f"static/images/{recipe['author']}_avt.jpg"
+            # Nếu recipe.author không phải người dùng hiện tại
+            if recipe['author'] != session['username']:
+                # Chỉ hiển thị ảnh mặc định nếu không có ảnh của author
+                if os.path.exists(avatar_path):
+                    recipe['avatar_url'] = url_for('static', filename=f"images/{recipe['author']}_avt.jpg")
+                else:
+                    recipe['avatar_url'] = url_for('static', filename="images/default.jpg")
+            else:
+                # Nếu là người dùng hiện tại, giữ nguyên logic hiện tại
+                if os.path.exists(avatar_path):
+                    recipe['avatar_url'] = url_for('static', filename=f"images/{recipe['author']}_avt.jpg")
+                else:
+                    recipe['avatar_url'] = url_for('static', filename="images/default.jpg")
 
     # Đọc dữ liệu từ countries.json
     with open('data/countries.json', 'r', encoding='utf-8') as f:
@@ -142,10 +163,19 @@ def recipes(username):
     # Lấy danh sách tên quốc gia (bỏ mục đầu tiên "Choose a Country of Origin")
     countries = [country['name'] for country in countries_data if country['name'] != "Choose a Country of Origin"]
 
-    return render_template("recipes.html", author=sort_author,
-                           default=sort_default, name=sort_name, upvotes=sort_upvotes,
-                           downvotes=sort_downvotes, url_list=url_list,
-                           pages=pages, username=username, countries=countries)
+    return render_template(
+        "recipes.html",
+        author=sort_author,
+        default=sort_default,
+        name=sort_name,
+        upvotes=sort_upvotes,
+        downvotes=sort_downvotes,
+        url_list=url_list,
+        pages=pages,
+        current_page=(offset // limit) + 1,
+        username=username,
+        countries=countries
+    )
 
 #tạo route my recipes
 @app.route('/<username>/my_recipes')
@@ -395,6 +425,107 @@ def view_recipe(username, recipe_id):
             return redirect('/' + username + '/recipes?limit=10&offset=0')
          
     return render_template('view_recipe.html', recipe=the_recipe, username=username) 
+#chức năng cài đặt cho người dùng
+@app.route('/settings')
+def settings():
+    if 'username' not in session:
+        flash('Vui lòng đăng nhập để xem cài đặt.')
+        return redirect(url_for('login'))
+    
+    username = session['username']
+    print(f"Session username: {session.get('username')}")
+    return render_template('settings.html', username=username)
+# up ảnh avt
+@app.route('/upload_profile_picture', methods=['POST'])
+def upload_profile_picture():
+    if 'username' not in session:
+        flash('Vui lòng đăng nhập để tải ảnh hồ sơ.')
+        return redirect(url_for('login'))
+    
+    if 'profile_picture' not in request.files:
+        flash('Không có file nào được chọn.')
+        return redirect(url_for('settings'))
+    
+    file = request.files['profile_picture']
+    if file.filename == '':
+        flash('Không có file nào được chọn.')
+        return redirect(url_for('settings'))
+    
+    if file:
+        # Lưu ảnh với tên username_avt.jpg
+        filename = f"{session['username']}_avt.jpg"
+        file.save(os.path.join('static/images', filename))
+        flash('Ảnh hồ sơ đã được cập nhật thành công.')
+        return redirect(url_for('settings'))
+    
+    flash('Lỗi khi tải ảnh hồ sơ.')
+    return redirect(url_for('settings'))
+# update username
+@app.route('/update_username', methods=['POST'])
+def update_username():
+    if 'username' not in session:
+        flash('Vui lòng đăng nhập để cập nhật tên người dùng.')
+        return redirect(url_for('login'))
+    
+    new_username = request.form.get('new_username')
+    if not new_username:
+        flash('Tên người dùng mới không được để trống.')
+        return redirect(url_for('settings'))
+    
+    users = mongo.db.users
+    
+    # Kiểm tra xem tên người dùng mới đã tồn tại chưa
+    if users.find_one({'username': new_username}):
+        flash('Tên người dùng đã tồn tại. Vui lòng chọn tên khác.')
+        return redirect(url_for('settings'))
+    
+    # Cập nhật tên người dùng trong database
+    users.update_one(
+        {'username': session['username']},
+        {'$set': {'username': new_username}}
+    )
+    
+    # Cập nhật session với tên người dùng mới
+    old_username = session['username']
+    session['username'] = new_username
+    
+    # Đổi tên file ảnh hồ sơ (nếu có)
+    old_image_path = os.path.join('static/images', f"{old_username}_avt.jpg")
+    new_image_path = os.path.join('static/images', f"{new_username}_avt.jpg")
+    if os.path.exists(old_image_path):
+        os.rename(old_image_path, new_image_path)
+    
+    flash('Tên người dùng đã được cập nhật thành công.')
+    return redirect(url_for('settings'))
+# doi mk
+@app.route('/change_password', methods=['POST'])
+def change_password():
+    if 'username' not in session:
+        flash('Vui lòng đăng nhập để đổi mật khẩu.')
+        return redirect(url_for('login'))
+    
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+    
+    if not current_password or not new_password:
+        flash('Mật khẩu hiện tại và mật khẩu mới không được để trống.')
+        return redirect(url_for('settings'))
+    
+    users = mongo.db.users
+    user = users.find_one({'username': session['username'], 'password': current_password})
+    
+    if not user:
+        flash('Mật khẩu hiện tại không đúng.')
+        return redirect(url_for('settings'))
+    
+    # Cập nhật mật khẩu mới (plaintext)
+    users.update_one(
+        {'username': session['username']},
+        {'$set': {'password': new_password}}
+    )
+    
+    flash('Mật khẩu đã được cập nhật thành công.')
+    return redirect(url_for('settings'))
 def create_collections_and_indexes():
     try:
         # Tạo collection 'recipes' và các chỉ mục

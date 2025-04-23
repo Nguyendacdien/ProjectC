@@ -48,10 +48,57 @@
           <li class="nav-item">
             <a class="nav-link js-scroll-trigger" href="{{url_for('add_recipe', username=username)}}">Add Recipe</a>
           </li>
+          <!-- User Dropdown -->
+          <li class="nav-item dropdown">
+            {% if 'username' in session %}
+              <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <!-- Avatar -->
+                <img src="/{% if session['username'] %}static/images/{{ session['username'] }}_avt.jpg{% else %}/static/images/default.jpg{% endif %}"
+                alt="Avatar" 
+                style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;"
+                onerror="this.src='/static/images/default.jpg'">
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown" style="background-color: #2E3856; color: #ffffff;">
+                <!-- Thông báo -->
+                <li>
+                  <a class="dropdown-item text-white" href="#">
+                    <i class="fas fa-bell me-2"></i>Thông báo
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                      <ul class="list-unstyled mt-2">
+                        {% for category, message in messages %}
+                          <li class="text-{{ 'success' if category == 'success' else 'danger' }} mb-1">{{ message }}</li>
+                        {% endfor %}
+                      </ul>
+                    {% else %}
+                      <p class="text-muted mb-0">Không có thông báo.</p>
+                    {% endif %}
+                    {% endwith %}
+                  </a>
+                </li>
+                <!-- Cài đặt -->
+                <li>
+                  <a class="dropdown-item text-white" href="{{ url_for('settings', username=session['username']) }}">
+                    <i class="fas fa-gear me-2"></i>Cài đặt
+                  </a>
+                </li>
+                <!-- Đăng xuất -->
+                <li>
+                  <a class="dropdown-item text-white" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                  </a>
+                </li>
+              </ul>
+            {% else %}
+              <a class="nav-link" href="{{ url_for('login') }}">Đăng nhập</a>
+            {% endif %}
+          </li>
         </ul>
       </div>
     </div>
   </nav>
+
+  <!-- Flash Messages (giữ nguyên) -->
   {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
   <div class="container mt-5 pt-4" style="z-index: 1050; position: relative;">
@@ -66,6 +113,7 @@
   {% endwith %}
 
   {% block content %} {% endblock %}
+
   <!-- Bootstrap JS -->
   <script src="/static/js/jquery.js"></script>
   <script src="/static/js/bootstrap.js"></script>

@@ -27,8 +27,11 @@
                         </div>
                         <!-- Tác giả -->
                         <div class="d-flex align-items-center">
-                            <i class="fa fa-user me-1"></i>
-                            <span>{{ username }}</span>
+                            <img src="{{ url_for('static', filename='images/' + recipe.author + '_avt.jpg') }}"
+                            data-default="{{ url_for('static', filename='images/default.jpg') }}"
+                            alt="Avatar"
+                            class="avatar"
+                            style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
                         </div>
                     </div>
                 </div>
@@ -38,3 +41,10 @@
     </div>
 </div>
 {% endblock %}
+<script>
+    document.querySelectorAll('.avatar').forEach(img => {
+      img.onerror = function () {
+        this.src = this.dataset.default;
+      }
+    });
+  </script>
