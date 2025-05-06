@@ -6,18 +6,17 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
-  /* background: url('/static/img/header-min.jpg') no-repeat center center fixed; */
-  background-color: #0A0926;
+  background-color: #FFFFFF; /* Nền trắng */
   -webkit-background-size: cover;
   -moz-background-size: cover;
   background-size: cover;
   -o-background-size: cover;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Arial', sans-serif; /* Font không chân cho nội dung chung */
+  color: #000000; /* Chữ màu đen */
 }
 
 hr {
   /* Styles for hr element controlling width and border */
-
   max-width: 50px;
   border-width: 3px;
   border-color: #F05F40;
@@ -25,16 +24,15 @@ hr {
 
 hr.light {
   /* Styles for hr element controlling color */
-  
-  border-color: #fff;
+  border-color: #000000; /* Đổi màu hr để phù hợp với nền trắng */
 }
 
 a {
-  /* styles for tranisitons on links */
-  
+  /* styles for transitions on links */
   -webkit-transition: all 0.2s;
   -moz-transition: all 0.2s;
   transition: all 0.2s;
+  color: #000000; /* Chữ liên kết màu đen */
 }
 
 h1,
@@ -44,41 +42,38 @@ h4,
 h5,
 h6 {
   /* fonts for headings */
-
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Arial', sans-serif; /* Font không chân cho headings */
+  color: #000000; /* Chữ màu đen */
 }
 
 th {
-   /* styles table heading */
-   
+  /* styles table heading */
   white-space: nowrap;
   overflow: hidden;
+  color: #000000; /* Chữ màu đen */
 }
 
 ::-moz-selection {
   /* selection styles */
-  
-  color: #fff;
-  background: #212529;
+  color: #000000; /* Chữ màu đen khi chọn */
+  background: #D3D3D3; /* Nền xám nhạt khi chọn */
   text-shadow: none;
 }
 
 ::selection {
   /* selection styles */
-  
-  color: #fff;
-  background: #212529;
+  color: #000000; /* Chữ màu đen khi chọn */
+  background: #D3D3D3; /* Nền xám nhạt khi chọn */
   text-shadow: none;
 }
 
 /*.................................NAVBAR */
 
 #mainNav {
-  /* Navbar font and border styles  */
-  
-  border-bottom: 1px solid rgba(33, 37, 41, 0.1);
-  background-color: #fff;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  /* Navbar font and border styles */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Viền đen nhạt */
+  background-color: #FFFFFF; /* Nền trắng */
+  font-family: 'BlinkMacSystemFont', 'Segoe UI', sans-serif; /* Font BlinkMacSystemFont cho navbar */
   -webkit-transition: all 0.2s;
   -moz-transition: all 0.2s;
   transition: all 0.2s;
@@ -86,78 +81,96 @@ th {
 
 #mainNav .navbar-brand {
   /* navbar site logo section font styles */
-  
-  font-weight: 700;
+  font-weight: bold; /* Chữ in đậm */
   text-transform: uppercase;
-  color: #F05F40;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  color: #F05F40; /* Giữ màu cam nổi bật */
+  font-family: 'BlinkMacSystemFont', 'Segoe UI', sans-serif;
 }
 
 #mainNav .navbar-brand:focus,
 #mainNav .navbar-brand:hover {
   /* navbar site logo hover and focus styles */
-   
-  color: #f05f40;
+  color: #F05F40;
 }
 
 #mainNav .navbar-nav>li.nav-item>a.nav-link,
 #mainNav .navbar-nav>li.nav-item>a.nav-link:focus {
   /* navbar site links styles */
-  
   font-size: .9rem;
-  font-weight: 700;
+  font-weight: normal; /* Không in đậm */
   text-transform: uppercase;
-  color: #212529;
+  color: #000000; /* Chữ màu đen */
+  position: relative; /* Để thêm gạch chân */
+  text-decoration: none; /* Loại bỏ gạch chân mặc định */
+  padding-bottom: 2px; /* Khoảng cách giữa chữ và gạch chân */
 }
 
 #mainNav .navbar-nav>li.nav-item>a.nav-link:hover,
 #mainNav .navbar-nav>li.nav-item>a.nav-link:focus:hover {
   /* navbar site links hover and focus styles */
-  
-  color: #F05F40;
+  color: #000000; /* Giữ màu đen khi hover */
+}
+
+/* Thêm gạch chân sát chữ khi hover */
+#mainNav .navbar-nav>li.nav-item>a.nav-link:hover::after,
+#mainNav .navbar-nav>li.nav-item>a.nav-link:focus:hover::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0; /* Gạch chân sát ngay dưới chữ */
+  width: 100%; /* Chiều rộng bằng chiều rộng chữ */
+  height: 2px; /* Độ dày gạch chân */
+  background-color: #000000; /* Gạch chân màu đen */
+}
+
+/* Loại bỏ hiệu ứng gạch chân cho phần tên người dùng (Dien2) trong dropdown */
+#mainNav .navbar-nav .nav-item.dropdown .nav-link.dropdown-toggle {
+  text-decoration: none !important;
+}
+
+#mainNav .navbar-nav .nav-item.dropdown .nav-link.dropdown-toggle:hover::after,
+#mainNav .navbar-nav .nav-item.dropdown .nav-link.dropdown-toggle:focus:hover::after {
+  display: none !important; /* Loại bỏ gạch chân */
 }
 
 /*.................................HOME PAGE */
 
 header.masthead {
   /* padding styles */
-  
   padding-top: 11.5em;
 }
 
 header.masthead h1 {
   /* font size */
-  
   font-size: 2rem;
+  color: #000000; /* Chữ màu đen */
 }
 
 header.masthead p {
   /* font weight */
-  
-  font-weight: 300;
+  font-weight: normal; /* Không in đậm */
+  color: #000000; /* Chữ màu đen */
 }
 
 /*.................................BUTTONS */
 
 .btn {
   /* styles button element removes border, set font */
-  
-  font-weight: 700;
+  font-weight: normal; /* Không in đậm */
   text-transform: uppercase;
   border: none;
   border-radius: 300px;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Arial', sans-serif;
+  color: #000000; /* Chữ màu đen */
 }
 
 .btn-xl {
   /* larger button then regular btn */
-  
   padding: 1rem 2rem;
 }
 
 .btn.btn-square {
   /* a square shaped button */
-  
   border-radius: 0;
 }
 
@@ -165,20 +178,16 @@ header.masthead p {
 
 #ins-remove {
   /* default setting for the remove instruction button */
-  
   display: none;
 }
 
-
 #ing-remove {
   /* default setting for the remove ingredient button */
-
   display: none;
 }
 
 #allerg-remove {
   /* default setting for the remove allergen button */
-
   display: none;
 }
 
@@ -186,148 +195,124 @@ header.masthead p {
 
 #ingredients-list {
   /* remove list styling */
-
   list-style-type: none;
 }
 
 .viewdiv {
   /* set padding */
-
   padding-top: 2rem;
 }
 
 .topdiv {
   /* set padding */
-  
   padding-top: 5rem;
 }
 
 .vote {
   /* hide elements in this class */
-  
   display: none;
 }
 
 #formUpvote {
   /* set the element to display next to other elements with inline-block */
-  
-    display: inline-block; 
+  display: inline-block; 
 }
+
 #formDownvote {
   /* set the element to display next to other elements with inline-block */
-  
-    display: inline-block; 
+  display: inline-block; 
 }
 
 /*.................................RECIPE TABLES */
 
 .recipe-page {
   /* set padding */
-  
-  padding-top: 00;
-
+  padding-top: 0;
 }
 
 .sortButton {
   /* enable the user to know the button is clickable via cursor feedback */
-  
   cursor: pointer;
 }
 
 #sortDefault {
   /* default setting for the sort default table */
-  
   display: inline-block;
 }
 
 #sortAuthor {
   /* default setting for the sort author table */
-  
   display: none;
 }
 
-#sortName{
+#sortName {
   /* default setting for the sort name table */
-  
   display: none;
 }
 
-#sortUpvotes{
+#sortUpvotes {
   /* default setting for the sort upvotes table */
-  
   display: none;
 }
 
 #sortDownvotes {
   /* default setting for the sort downvotes table */
-  
   display: none;
 }
 
 #sortCountry {
   /* default setting for the sort country table */
-  
   display: none;
 }
 
 /*.................................MEDIA QUERIES */
 
 @media (min-width: 768px) {
-  
   header.masthead p {
     /* set font size */
-    
     font-size: 1.15rem;
   }
 }
 
 @media (min-width: 992px) {
-
   /* Navbar */
-  
   #mainNav {
     /* set navbar background to be transparent */
-    
     border-color: transparent;
-    background-color: transparent;
+    background-color: #FFFFFF; /* Nền trắng */
   }
+  
   #mainNav .navbar-brand {
     /* set color of navbar brand */
-    
-    color: rgba(255, 255, 255, 0.7);
+    color: #F05F40; /* Giữ màu cam */
   }
   
   #mainNav .navbar-brand:focus,
   #mainNav .navbar-brand:hover {
     /* set color of navbar brand when hovered/focused on */
-    
-    color: #fff;
+    color: #F05F40;
   }
   
   #mainNav .navbar-nav>li.nav-item>a.nav-link {
-     /* set padding between nav-links */
-     
+    /* set padding between nav-links */
     padding: 0.5rem 1rem;
   }
   
   #mainNav .navbar-nav>li.nav-item>a.nav-link,
   #mainNav .navbar-nav>li.nav-item>a.nav-link:focus {
-     /* set color of nav-links */
-     
-    color: rgba(255, 255, 255, 0.7);
+    /* set color of nav-links */
+    color: #000000; /* Chữ màu đen */
   }
+  
   #mainNav .navbar-nav>li.nav-item>a.nav-link:hover,
   #mainNav .navbar-nav>li.nav-item>a.nav-link:focus:hover {
     /* set color of nav-links upon interaction */
-    
-    color: #fff;
+    color: #000000; /* Chữ màu đen */
   }
   
   /* Home Page */
-  
   header.masthead h1 {
     /* set font size */
-    
     font-size: 3rem;
   }
 }
@@ -335,12 +320,11 @@ header.masthead p {
 @media (min-width: 1200px) {
   header.masthead h1 {
     /* set font size */
-     
     font-size: 4rem;
   }
 }
 
-/* set chọn được cho card*/
+/* set chọn được cho card */
 .card-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -349,46 +333,51 @@ header.masthead p {
 }
 
 .recipe-card {
-  background-color: #2c2f4b; /* màu xanh đậm nhẹ */
-  color: #ffffff;
-  padding: 15px;
+  background-color: #FFFFFF; /* Nền trắng cho card */
+  color: #000000; /* Chữ màu đen */
+  border: 1px solid #E0E0E0; /* Viền xám nhạt */
   border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
   transition: transform 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .recipe-card:hover {
   transform: scale(1.02);
 }
 
-.recipe-card h4 {
+.recipe-card h5 {
   margin-top: 0;
   margin-bottom: 10px;
+  font-size: 1.2rem;
 }
 
-.btn-group .btn {
-  margin-right: 5px;
+.recipe-card img {
+  object-fit: cover;
+  height: 200px; /* Độ cao cố định cho ảnh */
 }
 
 /* hover item */
 .recipe-item:hover {
-  background-color: #3A4566 !important;
+  background-color: #D3D3D3 !important; /* Xám nhạt khi hover */
   transition: background-color 0.3s ease;
 }
 
-/* chỉnh width của recipes full thanh ngangngang */
+/* chỉnh width của recipes full thanh ngang */
 .recipe-list {
   width: 100%;
 }
+
 .recipe-item {
   width: 100% !important;
   box-sizing: border-box;
 }
+
 .country-filter {
   width: 200px; /* Điều chỉnh chiều rộng ô nhập liệu nếu cần */
 }
 
-/*css nút phân trang*/
+/* css nút phân trang */
 .pagination-btn {
   display: inline-block;
   min-width: 40px;
@@ -396,33 +385,32 @@ header.masthead p {
   line-height: 40px;
   margin: 0 5px;
   text-align: center;
-  background-color: #2e3856;
-  color: #fff;
-  font-weight: bold;
+  background-color: #E0E0E0; /* Xám nhạt */
+  color: #000000; /* Chữ màu đen */
+  font-weight: normal; /* Không in đậm */
   border-radius: 10px;
   text-decoration: none;
   transition: all 0.2s ease;
 }
 
 .pagination-btn:hover {
-  background-color: #2e3856;
+  background-color: #D3D3D3; /* Xám nhạt hơn khi hover */
   transform: scale(1.05);
 }
 
 .pagination-btn.active {
-  background-color: #2e3856;
+  background-color: #D3D3D3;
   pointer-events: none;
   cursor: default;
 }
 
-/*Label phải trắngtrắng*/
+/* Label màu đen để phù hợp nền trắng */
 .instructionClass + label,
 label.text-white {
-    color: white !important;
+  color: #000000 !important; /* Chữ màu đen */
 }
 
-
-/*css message thông báo*/
+/* css message thông báo */
 .flash-container {
   position: fixed;
   top: 10px;
@@ -438,19 +426,20 @@ label.text-white {
   padding: 15px 20px;
   margin-bottom: 10px;
   border-radius: 6px;
-  font-weight: bold;
+  font-weight: normal; /* Không in đậm */
   text-align: center;
   position: relative;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  color: #000000; /* Chữ màu đen */
 }
 
 .alert-error {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: #FFD1D1; /* Đỏ nhạt để nổi bật */
+  color: #721C24;
 }
 
 .alert-success {
-  background-color: #d4edda;
+  background-color: #D4FFD4; /* Xanh nhạt để nổi bật */
   color: #155724;
 }
 
@@ -461,6 +450,7 @@ label.text-white {
   transform: translateY(-50%);
   font-size: 18px;
   cursor: pointer;
+  color: #000000; /* Màu đen */
 }
 
 @keyframes slideDown {
@@ -473,3 +463,4 @@ label.text-white {
     top: 10px;
   }
 }
+

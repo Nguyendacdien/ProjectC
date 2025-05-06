@@ -6,9 +6,9 @@
         <div class="container my-5 px-0">
             <div class="row recipe-page">
                 <div class="col-lg-12">
-                    <h1 class="text-uppercase text-white">
-                        <strong>Recipes</strong>
-                    </h1>
+                    <h1 style="color: #000000; font-family: 'SchroedersDiet', Georgia, serif; text-transform: uppercase; font-weight: bold;">
+                        WELCOME
+                    </h1>                              
                 </div>
             </div>
 
@@ -39,37 +39,28 @@
                 </div>
             </div>
 
-            <!-- Danh sách công thức dạng thanh ngang -->
-            <div class="recipe-list px-0">
+            <!-- Danh sách công thức dạng card -->
+            <div class="card-container">
                 <!-- Mặc định -->
                 <div id="sortDefault">
                     {% for recipe in default %}
                     <a href="{{ url_for('view_recipe', recipe_id=recipe.recipeID, username=recipe.author) }}" style="text-decoration: none; display: block;">
-                        <div class="recipe-item mb-3 p-3 rounded w-100" style="background-color: #2E3856; color: #ffffff; margin: 0; width: 200% !important; box-sizing: border-box;" data-country="{{ recipe.country|lower }}">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <!-- Tên công thức và quốc gia -->
-                                <div>
-                                    <h5 class="mb-1">{{ recipe.name.title() }}</h5>
-                                    <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
-                                </div>
-                                <!-- Thông tin bổ sung -->
-                                <div class="d-flex align-items-center gap-3">
-                                    <!-- Số lượt upvotes -->
+                        <div class="recipe-card mb-3" data-country="{{ recipe.country|lower }}">
+                            <img src="{{ recipe.images[0] if recipe.images and recipe.images|length > 0 else url_for('static', filename='images/default.jpg') }}" alt="{{ recipe.name.title() }}" style="width: 100%; height: auto; border-radius: 10px 10px 0 0;">
+                            <div class="p-3">
+                                <h5 class="mb-1">{{ recipe.name.title() }}</h5>
+                                <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
+                                <div class="d-flex align-items-center gap-3 mt-2">
                                     <div class="d-flex align-items-center">
                                         <i class="fa fa-thumbs-up me-1" style="color: #28a745;"></i>
                                         <span>{{ recipe.upvotes if recipe.upvotes else 0 }} lượt thích</span>
                                     </div>
-                                    <!-- Số lượt downvotes -->
                                     <div class="d-flex align-items-center">
                                         <i class="fa fa-thumbs-down me-1" style="color: #dc3545;"></i>
                                         <span>{{ recipe.downvotes if recipe.downvotes else 0 }} không thích</span>
                                     </div>
-                                    <!-- Tác giả -->
                                     <div class="d-flex align-items-center">
-                                        <img 
-                                            src="{{ recipe.avatar_url }}" 
-                                            class="avatar" 
-                                            style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
+                                        <img src="{{ recipe.avatar_url }}" class="avatar" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
                                     </div>
                                 </div>
                             </div>
@@ -82,13 +73,12 @@
                 <div id="sortAuthor" style="display: none;">
                     {% for recipe in author %}
                     <a href="{{ url_for('view_recipe', recipe_id=recipe.recipeID, username=recipe.author) }}" style="text-decoration: none; display: block;">
-                        <div class="recipe-item mb-3 p-3 rounded w-100" style="background-color: #2E3856; color: #ffffff; margin: 0; width: 200% !important; box-sizing: border-box;" data-country="{{ recipe.country|lower }}">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 class="mb-1">{{ recipe.name.title() }}</h5>
-                                    <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
-                                </div>
-                                <div class="d-flex align-items-center gap-3">
+                        <div class="recipe-card mb-3" data-country="{{ recipe.country|lower }}">
+                            <img src="{{ recipe.images[0] if recipe.images and recipe.images|length > 0 else url_for('static', filename='images/default.jpg') }}" alt="{{ recipe.name.title() }}" style="width: 100%; height: auto; border-radius: 10px 10px 0 0;">
+                            <div class="p-3">
+                                <h5 class="mb-1">{{ recipe.name.title() }}</h5>
+                                <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
+                                <div class="d-flex align-items-center gap-3 mt-2">
                                     <div class="d-flex align-items-center">
                                         <i class="fa fa-thumbs-up me-1" style="color: #28a745;"></i>
                                         <span>{{ recipe.upvotes if recipe.upvotes else 0 }} lượt thích</span>
@@ -98,10 +88,7 @@
                                         <span>{{ recipe.downvotes if recipe.downvotes else 0 }} không thích</span>
                                     </div>
                                     <div class="d-flex align-items-center">
-                                        <img 
-                                            src="{{ recipe.avatar_url }}" 
-                                            class="avatar" 
-                                            style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
+                                        <img src="{{ recipe.avatar_url }}" class="avatar" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
                                     </div>
                                 </div>
                             </div>
@@ -114,13 +101,12 @@
                 <div id="sortName" style="display: none;">
                     {% for recipe in name %}
                     <a href="{{ url_for('view_recipe', recipe_id=recipe.recipeID, username=recipe.author) }}" style="text-decoration: none; display: block;">
-                        <div class="recipe-item mb-3 p-3 rounded w-100" style="background-color: #2E3856; color: #ffffff; margin: 0; width: 200% !important; box-sizing: border-box;" data-country="{{ recipe.country|lower }}">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 class="mb-1">{{ recipe.name.title() }}</h5>
-                                    <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
-                                </div>
-                                <div class="d-flex align-items-center gap-3">
+                        <div class="recipe-card mb-3" data-country="{{ recipe.country|lower }}">
+                            <img src="{{ recipe.images[0] if recipe.images and recipe.images|length > 0 else url_for('static', filename='images/default.jpg') }}" alt="{{ recipe.name.title() }}" style="width: 100%; height: auto; border-radius: 10px 10px 0 0;">
+                            <div class="p-3">
+                                <h5 class="mb-1">{{ recipe.name.title() }}</h5>
+                                <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
+                                <div class="d-flex align-items-center gap-3 mt-2">
                                     <div class="d-flex align-items-center">
                                         <i class="fa fa-thumbs-up me-1" style="color: #28a745;"></i>
                                         <span>{{ recipe.upvotes if recipe.upvotes else 0 }} lượt thích</span>
@@ -130,10 +116,7 @@
                                         <span>{{ recipe.downvotes if recipe.downvotes else 0 }} không thích</span>
                                     </div>
                                     <div class="d-flex align-items-center">
-                                        <img 
-                                            src="{{ recipe.avatar_url }}" 
-                                            class="avatar" 
-                                            style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
+                                        <img src="{{ recipe.avatar_url }}" class="avatar" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
                                     </div>
                                 </div>
                             </div>
@@ -146,13 +129,12 @@
                 <div id="sortUpvotes" style="display: none;">
                     {% for recipe in upvotes %}
                     <a href="{{ url_for('view_recipe', recipe_id=recipe.recipeID, username=recipe.author) }}" style="text-decoration: none; display: block;">
-                        <div class="recipe-item mb-3 p-3 rounded w-100" style="background-color: #2E3856; color: #ffffff; margin: 0; width: 200% !important; box-sizing: border-box;" data-country="{{ recipe.country|lower }}">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 class="mb-1">{{ recipe.name.title() }}</h5>
-                                    <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
-                                </div>
-                                <div class="d-flex align-items-center gap-3">
+                        <div class="recipe-card mb-3" data-country="{{ recipe.country|lower }}">
+                            <img src="{{ recipe.images[0] if recipe.images and recipe.images|length > 0 else url_for('static', filename='images/default.jpg') }}" alt="{{ recipe.name.title() }}" style="width: 100%; height: auto; border-radius: 10px 10px 0 0;">
+                            <div class="p-3">
+                                <h5 class="mb-1">{{ recipe.name.title() }}</h5>
+                                <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
+                                <div class="d-flex align-items-center gap-3 mt-2">
                                     <div class="d-flex align-items-center">
                                         <i class="fa fa-thumbs-up me-1" style="color: #28a745;"></i>
                                         <span>{{ recipe.upvotes if recipe.upvotes else 0 }} lượt thích</span>
@@ -162,10 +144,7 @@
                                         <span>{{ recipe.downvotes if recipe.downvotes else 0 }} không thích</span>
                                     </div>
                                     <div class="d-flex align-items-center">
-                                        <img 
-                                            src="{{ recipe.avatar_url }}" 
-                                            class="avatar" 
-                                            style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
+                                        <img src="{{ recipe.avatar_url }}" class="avatar" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
                                     </div>
                                 </div>
                             </div>
@@ -178,13 +157,12 @@
                 <div id="sortDownvotes" style="display: none;">
                     {% for recipe in downvotes %}
                     <a href="{{ url_for('view_recipe', recipe_id=recipe.recipeID, username=recipe.author) }}" style="text-decoration: none; display: block;">
-                        <div class="recipe-item mb-3 p-3 rounded w-100" style="background-color: #2E3856; color: #ffffff; margin: 0; width: 200% !important; box-sizing: border-box;" data-country="{{ recipe.country|lower }}">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 class="mb-1">{{ recipe.name.title() }}</h5>
-                                    <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
-                                </div>
-                                <div class="d-flex align-items-center gap-3">
+                        <div class="recipe-card mb-3" data-country="{{ recipe.country|lower }}">
+                            <img src="{{ recipe.images[0] if recipe.images and recipe.images|length > 0 else url_for('static', filename='images/default.jpg') }}" alt="{{ recipe.name.title() }}" style="width: 100%; height: auto; border-radius: 10px 10px 0 0;">
+                            <div class="p-3">
+                                <h5 class="mb-1">{{ recipe.name.title() }}</h5>
+                                <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
+                                <div class="d-flex align-items-center gap-3 mt-2">
                                     <div class="d-flex align-items-center">
                                         <i class="fa fa-thumbs-up me-1" style="color: #28a745;"></i>
                                         <span>{{ recipe.upvotes if recipe.upvotes else 0 }} lượt thích</span>
@@ -194,10 +172,7 @@
                                         <span>{{ recipe.downvotes if recipe.downvotes else 0 }} không thích</span>
                                     </div>
                                     <div class="d-flex align-items-center">
-                                        <img 
-                                            src="{{ recipe.avatar_url }}" 
-                                            class="avatar" 
-                                            style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
+                                        <img src="{{ recipe.avatar_url }}" class="avatar" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
                                     </div>
                                 </div>
                             </div>
@@ -232,13 +207,13 @@
             country = 'all';
         }
         
-        // Lấy tất cả các recipe-item trong div đang hiển thị
-        const activeSortDiv = document.querySelector('.recipe-list > div:not([style*="display: none"])');
-        const items = activeSortDiv.querySelectorAll('.recipe-item');
+        // Lấy tất cả các recipe-card trong div đang hiển thị
+        const activeSortDiv = document.querySelector('.card-container > div:not([style*="display: none"])');
+        const items = activeSortDiv.querySelectorAll('.recipe-card');
 
         items.forEach(item => {
             const itemCountry = item.getAttribute('data-country');
-            const parent = item.parentElement; // Thẻ <a> bao quanh recipe-item
+            const parent = item.parentElement; // Thẻ <a> bao quanh recipe-card
 
             if (country === 'all' || itemCountry === country) {
                 parent.style.display = 'block'; // Hiển thị
