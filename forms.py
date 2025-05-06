@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SelectField, SubmitField, BooleanField
-from wtforms.validators import DataRequired, Length, InputRequired
+from wtforms import StringField, TextAreaField, SelectField, SubmitField, BooleanField, FileField
+from wtforms.validators import DataRequired, Length, InputRequired, Optional
 from utils import get_countries
 
 country_list = get_countries()
@@ -13,6 +13,7 @@ class ReusableForm(FlaskForm):
     allergen1 = StringField('Allergen 1:', validators=[Length(max=100)])  # Không bắt buộc
     country = SelectField('Country of Origin', choices=country_list, validators=[InputRequired(message="*Required")])
     is_public = BooleanField('Make this recipe public', default=True)
+    image = FileField('Recipe Image:', validators=[Optional()])  # Thêm trường cho ảnh
     submit = SubmitField('Submit')
 
 class Username(FlaskForm):
@@ -20,3 +21,7 @@ class Username(FlaskForm):
 
 class Search(FlaskForm):
     search = StringField('Search:', validators=[DataRequired(message="*Required"), Length(min=1, max=100)])
+
+class CommentForm(FlaskForm):
+    comment = TextAreaField('Add a Comment:', validators=[DataRequired(message="*Required"), Length(min=1, max=500)])
+    submit = SubmitField('Post Comment')

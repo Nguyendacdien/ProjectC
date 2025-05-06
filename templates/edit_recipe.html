@@ -12,7 +12,7 @@
                     <hr class="light">
                 </div>
             </div>
-            <form class="needs-validation" method="POST">
+            <form class="needs-validation" method="POST" enctype="multipart/form-data">
                 {{ form.csrf_token }}
 
                 <div class="form-row">
@@ -29,6 +29,22 @@
                         {% for message in form.description.errors %}
                         <div class="invalid text-danger">{{ message }}</div>
                         {% endfor %}
+                    </div>
+                </div>
+                <!-- Thêm trường image và hiển thị ảnh hiện tại -->
+                <div class="form-row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.image.label(class_="text-white") }}
+                        {{ form.image(class_="form-control", id="image", accept="image/*") }}
+                        {% for message in form.image.errors %}
+                        <div class="invalid text-danger">{{ message }}</div>
+                        {% endfor %}
+                        {% if recipe.image_url %}
+                            <div class="mt-2">
+                                <p class="text-white">Current Image:</p>
+                                <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" style="max-width: 200px; height: auto;">
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="form-row instructions">

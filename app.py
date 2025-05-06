@@ -13,18 +13,32 @@ from wtforms import StringField, SelectField, TextAreaField, validators, SubmitF
 from forms import Username, ReusableForm, Search
 from flask import session
 from flask_bcrypt import Bcrypt
+from werkzeug.utils import secure_filename
+from datetime import datetime
+from forms import CommentForm
 
 load_dotenv(find_dotenv())
 
 app = Flask(__name__)
 
-#For Local .env file
+# Cấu hình thư mục lưu file
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = os.getenv('SECRET')
 
 app.config["MONGO_DBNAME"] = os.getenv('DBNAME')
 app.config["MONGO_URI"] = os.getenv('URI')
 
 mongo = PyMongo(app)
+
+# Hàm kiểm tra định dạng file
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Tạo thư mục uploads nếu chưa có
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -248,131 +262,228 @@ def search(username):
         offset=offset
     )
 
-@app.route('/<username>/add_recipe',methods=['GET','POST']  )
+#cho phep add anh vao cong thucthuc
+@app.route('/<username>/add_recipe', methods=['GET', 'POST'])
 def add_recipe(username):
     if 'username' not in session or session['username'] != username:
         flash('Login first', 'error')
         return redirect(url_for('login'))
-   #Load form
-    wtform = ReusableForm(request.form)
-    
-    #Get danh sach ten cong thuc
+
+    # Load form
+    wtform = ReusableForm()
+
+    # Get danh sách tên công thức
     name_list = list(mongo.db.recipes.find({}, {'name': 1, '_id': 0}))
-    
-    #Get recipe co ID cao nhat
+
+    # Get recipe có ID cao nhất
     count_list = list(mongo.db.recipes.find({}, {'recipeID': 1, '_id': 0}).sort([('recipeID', pymongo.DESCENDING)]))
-   
-    if request.method == 'POST' and wtform.validate():
-        
+
+    if request.method == 'POST' and wtform.validate_on_submit():
         # Get All Recipes
         recipes = mongo.db.recipes
-        
-        #Merge Additional Instruction Fields
+
+        # Merge Additional Instruction Fields
         instructions = request.form.getlist('instruction2')
         instructions.insert(0, request.form['instruction1'])
-    
-        #Merge Additional Ingredients Fields
+
+        # Merge Additional Ingredients Fields
         ingredients = request.form.getlist('ingredient2')
         ingredients.insert(0, request.form['ingredient1'])
-    
-        #Merge Additional Allergens Fields
+
+        # Merge Additional Allergens Fields
         allergens = request.form.getlist('allergen2')
-        if request.form['allergen1'] != '':
+        if request.form['allergen1']:
             allergens.insert(0, request.form['allergen1'])
-        
+
+        # Xử lý file ảnh
+        image_url = None
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename != '' and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                image_url = f"/static/uploads/{filename}"
+
         if search_name(request.form['name'], name_list):
             flash('That recipe already exists. Please enter another.', 'error')
             return render_template("add_recipe.html", form=wtform, errors=wtform.errors, username=username)
         else:
-            #Get public from form
+            # Get public from form
             is_public = wtform.is_public.data
-            #Insert New Recipe to Database
+
+            # Insert New Recipe to Database
             recipes.insert_one({
-                        'name': request.form['name'],
-                        'description': request.form['description'],
-                        'instructions': instructions,
-                        'upvotes': 0,
-                        'downvotes': 0,
-                        'ingredients': ingredients,
-                        'allergens': allergens,
-                        'country': request.form['country'],
-                        'author': session['username'],
-                        'recipeID': (count_list[0]['recipeID'] + 1) if count_list else 1,
-                        'is_public': is_public
-                    })
-            flash('Recipe added successfully!')
-            return redirect(url_for('recipes', username=username, limit=10, offset=0))
-    #Render Add Recipe Page
-    return render_template("add_recipe.html", form=wtform, errors=wtform.errors, username=username)
- 
-@app.route('/<username>/edit_recipe/<recipe_id>', methods=['GET', 'POST'])
-def edit_recipe(username, recipe_id):
-    if 'username' not in session:
-        flash('Vui long đăng nhập trước', 'error')
-        return redirect(url_for('login'))
-    if session['username'] != username:
-        flash('Bạn không thể chỉnh sửa công thức của người khác', 'error')
-        return redirect(url_for('recipes', username = session['username']))
-    # Lấy công thức
-    the_recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id), "author": username})
-    if not the_recipe:
-        flash('Recipe not found or you do not have permission to edit.', 'error')
-        return redirect(url_for('my_recipes', username=username))
-
-    wtform = ReusableForm()  # Khởi tạo form
-
-    if request.method == 'POST' and wtform.validate_on_submit():
-        recipes = mongo.db.recipes
-
-        # Kiểm tra tên trùng (loại trừ công thức hiện tại)
-        name_list = [doc['name'] for doc in recipes.find({"recipeID": {"$ne": int(recipe_id)}}, {'name': 1, '_id': 0})]
-        if request.form['name'] in name_list:
-            flash('That recipe name already exists. Please choose another.', 'error')
-            return render_template('edit_recipe.html', recipe=the_recipe, form=wtform, username=username)
-
-        # Xử lý instructions
-        instructions = request.form.getlist('instruction2')
-        instructions.insert(0, request.form['instruction1'])
-
-        # Xử lý ingredients
-        ingredients = request.form.getlist('ingredient2')
-        ingredients.insert(0, request.form['ingredient1'])
-
-        # Xử lý allergens
-        allergens = request.form.getlist('allergen2')
-        if request.form.get('allergen1'):
-            allergens.insert(0, request.form['allergen1'])
-
-        # Cập nhật công thức
-        recipes.update_one(
-            {"recipeID": int(recipe_id)},
-            {"$set": {
                 'name': request.form['name'],
                 'description': request.form['description'],
                 'instructions': instructions,
+                'upvotes': 0,
+                'downvotes': 0,
                 'ingredients': ingredients,
                 'allergens': allergens,
                 'country': request.form['country'],
-                'author': username,  # Lấy từ session
-                'is_public': wtform.is_public.data,
-                'upvotes': the_recipe['upvotes'],
-                'downvotes': the_recipe['downvotes']
-            }}
-        )
+                'author': session['username'],
+                'recipeID': (count_list[0]['recipeID'] + 1) if count_list else 1,
+                'is_public': is_public,
+                'image_url': image_url  # Lưu image_url
+            })
+            flash('Recipe added successfully!')
+            return redirect(url_for('recipes', username=username, limit=10, offset=0))
 
-        flash('Recipe updated successfully!', 'success')
+    # Render Add Recipe Page
+    return render_template("add_recipe.html", form=wtform, errors=wtform.errors, username=username)
+ 
+# @app.route('/<username>/edit_recipe/<recipe_id>', methods=['GET', 'POST'])
+# def edit_recipe(username, recipe_id):
+#     if 'username' not in session:
+#         flash('Vui long đăng nhập trước', 'error')
+#         return redirect(url_for('login'))
+#     if session['username'] != username:
+#         flash('Bạn không thể chỉnh sửa công thức của người khác', 'error')
+#         return redirect(url_for('recipes', username = session['username']))
+#     # Lấy công thức
+#     the_recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id), "author": username})
+#     if not the_recipe:
+#         flash('Recipe not found or you do not have permission to edit.', 'error')
+#         return redirect(url_for('my_recipes', username=username))
+
+#     wtform = ReusableForm()  # Khởi tạo form
+
+#     if request.method == 'POST' and wtform.validate_on_submit():
+#         recipes = mongo.db.recipes
+
+#         # Kiểm tra tên trùng (loại trừ công thức hiện tại)
+#         name_list = [doc['name'] for doc in recipes.find({"recipeID": {"$ne": int(recipe_id)}}, {'name': 1, '_id': 0})]
+#         if request.form['name'] in name_list:
+#             flash('That recipe name already exists. Please choose another.', 'error')
+#             return render_template('edit_recipe.html', recipe=the_recipe, form=wtform, username=username)
+
+#         # Xử lý instructions
+#         instructions = request.form.getlist('instruction2')
+#         instructions.insert(0, request.form['instruction1'])
+
+#         # Xử lý ingredients
+#         ingredients = request.form.getlist('ingredient2')
+#         ingredients.insert(0, request.form['ingredient1'])
+
+#         # Xử lý allergens
+#         allergens = request.form.getlist('allergen2')
+#         if request.form.get('allergen1'):
+#             allergens.insert(0, request.form['allergen1'])
+
+#         # Cập nhật công thức
+#         recipes.update_one(
+#             {"recipeID": int(recipe_id)},
+#             {"$set": {
+#                 'name': request.form['name'],
+#                 'description': request.form['description'],
+#                 'instructions': instructions,
+#                 'ingredients': ingredients,
+#                 'allergens': allergens,
+#                 'country': request.form['country'],
+#                 'author': username,  # Lấy từ session
+#                 'is_public': wtform.is_public.data,
+#                 'upvotes': the_recipe['upvotes'],
+#                 'downvotes': the_recipe['downvotes']
+#             }}
+#         )
+
+#         flash('Recipe updated successfully!', 'success')
+#         return redirect(url_for('my_recipes', username=username))
+
+#     # Điền sẵn dữ liệu cho form khi GET
+#     wtform.name.data = the_recipe['name']
+#     wtform.description.data = the_recipe['description']
+#     wtform.instruction1.data = the_recipe['instructions'][0] if the_recipe['instructions'] else ''
+#     wtform.ingredient1.data = the_recipe['ingredients'][0] if the_recipe['ingredients'] else ''
+#     wtform.allergen1.data = the_recipe['allergens'][0] if the_recipe['allergens'] else ''
+#     wtform.country.data = the_recipe['country']
+#     wtform.is_public.data = the_recipe.get('is_public', True)
+
+#     return render_template('edit_recipe.html', recipe=the_recipe, form=wtform, username=username)
+#route edit moimoi
+@app.route('/<username>/edit_recipe/<recipe_id>', methods=['GET', 'POST'])
+def edit_recipe(username, recipe_id):
+    # Check if user is logged in and authorized
+    if 'username' not in session or session['username'] != username:
+        flash('Please log in to edit this recipe.', 'error')
+        return redirect(url_for('login'))
+
+    # Get recipe from MongoDB
+    recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id)})
+    if not recipe:
+        flash('Recipe not found.', 'error')
         return redirect(url_for('my_recipes', username=username))
 
-    # Điền sẵn dữ liệu cho form khi GET
-    wtform.name.data = the_recipe['name']
-    wtform.description.data = the_recipe['description']
-    wtform.instruction1.data = the_recipe['instructions'][0] if the_recipe['instructions'] else ''
-    wtform.ingredient1.data = the_recipe['ingredients'][0] if the_recipe['ingredients'] else ''
-    wtform.allergen1.data = the_recipe['allergens'][0] if the_recipe['allergens'] else ''
-    wtform.country.data = the_recipe['country']
-    wtform.is_public.data = the_recipe.get('is_public', True)
+    # Initialize form with current recipe data
+    form = ReusableForm(
+        name=recipe['name'],
+        description=recipe['description'],
+        instruction1=recipe['instructions'][0] if recipe['instructions'] else "",
+        ingredient1=recipe['ingredients'][0] if recipe['ingredients'] else "",
+        allergen1=recipe['allergens'][0] if recipe['allergens'] else "",
+        country=recipe['country'],
+        is_public=recipe.get('is_public', False)
+    )
 
-    return render_template('edit_recipe.html', recipe=the_recipe, form=wtform, username=username)
+    if request.method == 'POST' and form.validate_on_submit():
+        # Collect instructions
+        instructions = []
+        for key, value in request.form.items():
+            if key.startswith('instruction') and value.strip():
+                instructions.append(value.strip())
+
+        # Collect ingredients
+        ingredients = []
+        for key, value in request.form.items():
+            if key.startswith('ingredient') and value.strip():
+                ingredients.append(value.strip())
+
+        # Collect allergens
+        allergens = []
+        for key, value in request.form.items():
+            if key.startswith('allergen') and value.strip():
+                allergens.append(value.strip())
+
+        # Handle image upload
+        image_url = recipe.get('image_url')  # Keep existing image_url if no new image
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename != '' and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                try:
+                    file.save(file_path)
+                    image_url = f"/static/uploads/{filename}"
+                except Exception as e:
+                    flash(f"Failed to upload image: {str(e)}", 'error')
+                    return render_template("edit_recipe.html", form=form, recipe=recipe, username=username)
+
+        # Update recipe in MongoDB
+        updated_recipe = {
+            'name': request.form['name'],
+            'description': request.form['description'],
+            'instructions': instructions,
+            'ingredients': ingredients,
+            'allergens': allergens,
+            'country': request.form['country'],
+            'author': username,
+            'is_public': 'is_public' in request.form,
+            'image_url': image_url,
+            'upvotes': recipe.get('upvotes', 0),
+            'downvotes': recipe.get('downvotes', 0),
+            'comments': recipe.get('comments', []),
+            'recipeID': int(recipe_id)
+        }
+
+        mongo.db.recipes.update_one(
+            {"recipeID": int(recipe_id)},
+            {"$set": updated_recipe}
+        )
+        flash('Recipe updated successfully!', 'success')
+        return redirect(url_for('view_recipe', username=username, recipe_id=recipe_id))
+
+    return render_template("edit_recipe.html", form=form, recipe=recipe, username=username)
 
 @app.route('/<username>/delete_recipe/<recipe_id>', methods=['GET'])
 def delete_recipe(username, recipe_id):
@@ -394,49 +505,65 @@ def delete_recipe(username, recipe_id):
 
     flash('Recipe deleted successfully!', 'success')
     return redirect(url_for('my_recipes', username=username))
- 
-@app.route('/<username>/view_recipe/<recipe_id>', methods=['GET','POST'])
+ #thêm comment
+@app.route('/<username>/view_recipe/<recipe_id>', methods=['GET', 'POST'])
 def view_recipe(username, recipe_id):
-    
-    #Get Recipes
+    # Get Recipes
     recipes = mongo.db.recipes
     
-    #Get Details of Selected Recipe
-    the_recipe = mongo.db.recipes.find_one({"recipeID":int(recipe_id)})
+    # Get Details of Selected Recipe
+    the_recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id)})
     
-    #Get Voting Details of Selected Recipe
-    the_recipe_vote = mongo.db.recipes.find_one({"recipeID":int(recipe_id)}, { 'upvotes': 1, 'downvotes': 1 })
-    
-    #Store Voting Details of Selected Recipe
+    if not the_recipe or (the_recipe.get('is_public', False) == False and session.get('username') != username):
+        flash('Recipe not found or not accessible.', 'error')
+        return redirect(url_for('recipes', username=username, limit=10, offset=0))
+
+    # Get Voting Details of Selected Recipe
+    the_recipe_vote = mongo.db.recipes.find_one({"recipeID": int(recipe_id)}, {'upvotes': 1, 'downvotes': 1})
     current = []
     current.append(the_recipe_vote)
- 
-    #If a Button is Pressed
+
+    # Form comment
+    comment_form = CommentForm()
+
+    # If a Button is Pressed (Vote or Comment)
     if request.method == "POST":
+        if 'vote' in request.form:
+            # If Upvote
+            if request.form['vote'] == "upvote":
+                upvote = current[0]['upvotes'] + 1
+                recipes.update_one({'recipeID': int(recipe_id)}, {'$set': {'upvotes': upvote}})
+                flash('Đã tăng lượt thích!', 'success')
+                return redirect(f'/{username}/view_recipe/{recipe_id}')
+            
+            # If Downvote
+            elif request.form['vote'] == "downvote":
+                downvote = current[0]['downvotes'] + 1
+                recipes.update_one({'recipeID': int(recipe_id)}, {'$set': {'downvotes': downvote}})
+                flash('Đã tăng lượt không thích!', 'success')
+                return redirect(f'/{username}/view_recipe/{recipe_id}')
         
-        #If Upvote
-        if request.form['vote'] == "upvote":
-            
-            #Increment upvote
-            upvote = current[0]['upvotes'] + 1
-            
-            #Update Field
-            recipes.update_one({'recipeID': int(recipe_id) },{ '$set':{ 'upvotes' : upvote}})
-            flash('Đã tăng lượt thích!', 'success')
-            return redirect('/' + username + '/recipes?limit=10&offset=0')
-         
-        #If Downvote 
-        elif request.form['vote'] == "downvote":
-            
-            #Increment upvote
-            downvote = current[0]['downvotes'] + 1
-            
-            #Update Field
-            recipes.update_one( {'recipeID': int(recipe_id) }, { '$set': { 'downvotes' : downvote } } )
-            flash('Đã tăng lượt không thích!', 'success')
-            return redirect('/' + username + '/recipes?limit=10&offset=0')
-         
-    return render_template('view_recipe.html', recipe=the_recipe, username=username) 
+        elif comment_form.validate_on_submit() and 'comment' in request.form:
+            if 'username' not in session:
+                flash('Please log in to comment.', 'error')
+                return redirect(url_for('login'))
+            if the_recipe.get('is_public', False):
+                comment_text = request.form['comment']
+                new_comment = {
+                    'username': session['username'],
+                    'comment_text': comment_text,
+                    'timestamp': datetime.utcnow().isoformat() + 'Z'
+                }
+                recipes.update_one(
+                    {'recipeID': int(recipe_id)},
+                    {'$push': {'comments': new_comment}}
+                )
+                flash('Comment added successfully!', 'success')
+            else:
+                flash('Only public recipes can be commented on.', 'error')
+            return redirect(f'/{username}/view_recipe/{recipe_id}')
+
+    return render_template('view_recipe.html', recipe=the_recipe, username=username, comment_form=comment_form)
 #chức năng cài đặt cho người dùng
 @app.route('/settings')
 def settings():
@@ -538,6 +665,7 @@ def change_password():
     
     flash('Mật khẩu đã được cập nhật thành công.')
     return redirect(url_for('settings'))
+
 def create_collections_and_indexes():
     try:
         # Tạo collection 'recipes' và các chỉ mục

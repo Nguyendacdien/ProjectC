@@ -12,7 +12,8 @@
                     <hr class="light">
                 </div>
             </div>
-            <form class="needs-validation" method="POST">
+            <!-- Thêm enctype để hỗ trợ tải file -->
+            <form class="needs-validation" method="POST" enctype="multipart/form-data">
                 {{ form.csrf_token }}
 
                 <div class="form-row">
@@ -27,6 +28,16 @@
                         {{ form.description.label(class_="text-white") }}
                         {{ form.description(class_="form-control", placeholder="Recipe Description", type="text", id="validationCustom02", autocomplete="off") }}
                         {% for message in form.description.errors %}
+                        <div class="invalid text-danger">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <!-- Thêm trường tải ảnh -->
+                <div class="form-row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.image.label(class_="text-white") }}
+                        {{ form.image(class_="form-control", id="image", accept="image/*") }}
+                        {% for message in form.image.errors %}
                         <div class="invalid text-danger">{{ message }}</div>
                         {% endfor %}
                     </div>
