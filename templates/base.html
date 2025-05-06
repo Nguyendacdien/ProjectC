@@ -18,6 +18,16 @@
   <!-- Custom CSS -->
   <link rel="stylesheet" href="/static/css/creative.css" type="text/css" />
 
+  <!-- Thêm CSS inline cho hiệu ứng đỏ -->
+  <style>
+    .has-unread {
+      color: #ff0000 !important; /* Màu đỏ cho chữ */
+    }
+    .has-unread i {
+      color: #ff0000 !important; /* Màu đỏ cho icon */
+    }
+  </style>
+
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <meta name="description" content="An Online Cookbook">
@@ -60,23 +70,19 @@
                 alt="Avatar" 
                 style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;"
                 onerror="this.src='/static/images/default.jpg'">
+                {{ session['username'] }}
               </a>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown" style="background-color: #2E3856; color: #ffffff;">
                 <!-- Thông báo -->
                 <li>
-                  <a class="dropdown-item text-white" href="#">
+                  <a class="dropdown-item text-white position-relative {% if unread_notifications and unread_notifications > 0 %}has-unread{% endif %}" href="{{ url_for('notifications', username=session['username']) }}">
                     <i class="fas fa-bell me-2"></i>Thông báo
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                      <ul class="list-unstyled mt-2">
-                        {% for category, message in messages %}
-                          <li class="text-{{ 'success' if category == 'success' else 'danger' }} mb-1">{{ message }}</li>
-                        {% endfor %}
-                      </ul>
-                    {% else %}
-                      <p class="text-muted mb-0">Không có thông báo.</p>
+                    {% if unread_notifications and unread_notifications > 0 %}
+                      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        {{ unread_notifications }}
+                        <span class="visually-hidden">unread notifications</span>
+                      </span>
                     {% endif %}
-                    {% endwith %}
                   </a>
                 </li>
                 <!-- Cài đặt -->
@@ -101,7 +107,7 @@
     </div>
   </nav>
 
-  <!-- Flash Messages (giữ nguyên) -->
+  <!-- Flash Messages (giữ nguyên cho các thông báo khác) -->
   {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
   <div class="container mt-5 pt-4" style="z-index: 1050; position: relative;">

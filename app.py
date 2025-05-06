@@ -35,7 +35,18 @@ mongo = PyMongo(app)
 # Hàm kiểm tra định dạng file
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
+# Helper function to create notification
+def create_notification(username, type, recipe_id, from_username, message):
+    notification = {
+        "username": username,
+        "type": type,
+        "recipe_id": recipe_id,
+        "from_username": from_username,
+        "message": message,
+        "timestamp": datetime.utcnow().isoformat() + 'Z',
+        "read": False
+    }
+    mongo.db.notifications.insert_one(notification)
 # Tạo thư mục uploads nếu chưa có
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -188,6 +199,10 @@ def recipes(username):
     
     # Lấy danh sách tên quốc gia (bỏ mục đầu tiên "Choose a Country of Origin")
     countries = [country['name'] for country in countries_data if country['name'] != "Choose a Country of Origin"]
+    unread_notifications = mongo.db.notifications.count_documents({
+        "username": username,
+        "read": False
+    })
 
     return render_template(
         "recipes.html",
@@ -200,7 +215,8 @@ def recipes(username):
         pages=pages,
         current_page=(offset // limit) + 1,
         username=username,
-        countries=countries
+        countries=countries,
+        unread_notifications=unread_notifications
     )
 
 #tạo route my recipes
@@ -212,9 +228,12 @@ def my_recipes(username):
 
     recipes = mongo.db.recipes
     user_recipes = recipes.find({"author": username})
-    
+    unread_notifications = mongo.db.notifications.count_documents({
+        "username": username,
+        "read": False
+    })
 
-    return render_template("my_recipes.html", recipes=user_recipes, username=username)
+    return render_template("my_recipes.html", recipes=user_recipes, username=username, unread_notifications=unread_notifications)
 
 
     
@@ -268,7 +287,10 @@ def add_recipe(username):
     if 'username' not in session or session['username'] != username:
         flash('Login first', 'error')
         return redirect(url_for('login'))
-
+    unread_notifications = mongo.db.notifications.count_documents({
+        "username": username,
+        "read": False
+    })
     # Load form
     wtform = ReusableForm()
 
@@ -331,7 +353,7 @@ def add_recipe(username):
             return redirect(url_for('recipes', username=username, limit=10, offset=0))
 
     # Render Add Recipe Page
-    return render_template("add_recipe.html", form=wtform, errors=wtform.errors, username=username)
+    return render_template("add_recipe.html", form=wtform, errors=wtform.errors, username=username, unread_notifications=unread_notifications)
  
 # @app.route('/<username>/edit_recipe/<recipe_id>', methods=['GET', 'POST'])
 # def edit_recipe(username, recipe_id):
@@ -534,6 +556,14 @@ def view_recipe(username, recipe_id):
                 upvote = current[0]['upvotes'] + 1
                 recipes.update_one({'recipeID': int(recipe_id)}, {'$set': {'upvotes': upvote}})
                 flash('Đã tăng lượt thích!', 'success')
+                # Tạo thông báo
+                create_notification(
+                    the_recipe['author'],
+                    "upvote",
+                    int(recipe_id),
+                    session.get('username', 'anonymous'),
+                    f"{session.get('username', 'Someone')} upvoted your recipe '{the_recipe['name']}'"
+                )
                 return redirect(f'/{username}/view_recipe/{recipe_id}')
             
             # If Downvote
@@ -541,6 +571,14 @@ def view_recipe(username, recipe_id):
                 downvote = current[0]['downvotes'] + 1
                 recipes.update_one({'recipeID': int(recipe_id)}, {'$set': {'downvotes': downvote}})
                 flash('Đã tăng lượt không thích!', 'success')
+                # Tạo thông báo
+                create_notification(
+                    the_recipe['author'],
+                    "downvote",
+                    int(recipe_id),
+                    session.get('username', 'anonymous'),
+                    f"{session.get('username', 'Someone')} downvoted your recipe '{the_recipe['name']}'"
+                )
                 return redirect(f'/{username}/view_recipe/{recipe_id}')
         
         elif comment_form.validate_on_submit() and 'comment' in request.form:
@@ -559,11 +597,32 @@ def view_recipe(username, recipe_id):
                     {'$push': {'comments': new_comment}}
                 )
                 flash('Comment added successfully!', 'success')
+                # Tạo thông báo
+                create_notification(
+                    the_recipe['author'],
+                    "comment",
+                    int(recipe_id),
+                    session['username'],
+                    f"{session['username']} commented on your recipe '{the_recipe['name']}'"
+                )
             else:
                 flash('Only public recipes can be commented on.', 'error')
             return redirect(f'/{username}/view_recipe/{recipe_id}')
-
-    return render_template('view_recipe.html', recipe=the_recipe, username=username, comment_form=comment_form)
+    unread_notifications = mongo.db.notifications.count_documents({
+        "username": username,
+        "read": False
+    })
+    return render_template('view_recipe.html', recipe=the_recipe, username=username, comment_form=comment_form, unread_notifications=unread_notifications)
+# Route để lấy danh sách thông báo (tùy chọn)
+@app.route('/<username>/notifications')
+def notifications(username):
+    if 'username' not in session or session['username'] != username:
+        flash('Unauthorized access.', 'error')
+        return redirect(url_for('login'))
+    notifications = mongo.db.notifications.find({"username": username}).sort("timestamp", -1)
+    # Đánh dấu tất cả thông báo là đã đọc
+    mongo.db.notifications.update_many({"username": username, "read": False}, {"$set": {"read": True}})
+    return render_template('notifications.html', username=username, notifications=notifications)
 #chức năng cài đặt cho người dùng
 @app.route('/settings')
 def settings():
