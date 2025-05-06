@@ -1,14 +1,13 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
 {% block content %}
+<h2 style="text-align: center; margin-top: 80px; color: #333; font-family: Arial, sans-serif;">
+    Sách đã lưu của {{ username }}
+</h2>
 
-<h1 style="margin-top: 80px; color: #333; font-family: Arial, sans-serif; text-align: center;">
-    List of Books
-</h1>
-
-{% if books %}
+{% if book_count > 0 %}
 <ul
-    style="list-style: none; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; font-family: Arial, sans-serif; margin: 20px;">
+    style="list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; font-family: Arial, sans-serif; margin: 20px;">
     {% for book in books %}
     <a href="{{ url_for('view_book', username=username, book_id=book._id) }}"
         style="text-decoration: none; color: inherit;">
@@ -19,23 +18,18 @@
                 style="width:100%; height:250px; object-fit:cover;">
             <div class="title"
                 style="font-weight: bold; font-size: 1.1rem; margin: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                {{ book.title }}</div>
-            <div class="author" style="font-size: 0.9rem; margin: 0 10px 10px 10px; color: #777;">{{ book.author }}
+                {{ book.title }}
             </div>
-            <!-- Nút lưu sách -->
-            <form action="{{ url_for('save_book', username=username, book_id=book._id) }}" method="POST">
-                <button type="submit"
-                    style="background-color: #4CAF50; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; width: 100%; font-size: 1rem; margin-top: 10px;">
-                    Lưu sách
-                </button>
-            </form>
+            <div class="author" style="font-size: 0.9rem; margin: 0 10px 10px 10px; color: #777;">
+                {{ book.author }}
+            </div>
 
         </li>
     </a>
     {% endfor %}
 </ul>
 {% else %}
-<p style="text-align: center; margin-top: 80px; font-family: Arial, sans-serif;">No books found.</p>
+<p style="text-align: center; margin-top: 80px; font-family: Arial, sans-serif;">Chưa có sách nào trong My Book.</p>
 {% endif %}
 
 {% endblock %}

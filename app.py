@@ -136,17 +136,71 @@ def user_index(username):
     
 #     return render_template("index.html", form=wtform, errors=wtform.errors)
     
-@app.route('/books', methods=['GET'])
-def books():
+@app.route('/<username>/books', methods=['GET'])
+def books(username):
+    if 'username' not in session or session['username'] != username:
+        flash("Please log in first.")
+        return redirect(url_for('login'))
     books_collection = mongo.db.books
     books_list = list(books_collection.find())  
-    return render_template('book_list.html', books=books_list)  
-@app.route('/books/<book_id>')
-def view_book(book_id):
-    book = mongo.db.books.find_one({ '_id': ObjectId(book_id) })
+    return render_template('book_list.html', books=books_list, username=username)  
+@app.route('/view_book/<username>/<book_id>', methods=['GET'])
+def view_book(username, book_id):
+    book = mongo.db.books.find_one({"_id": ObjectId(book_id)})
     if not book:
-        return "Book not found", 404
-    return render_template('book.html', book=book) 
+        flash("Sách không tồn tại.", "danger")
+        return redirect(url_for('books', username=username))
+    
+    # Lấy trang hiện tại từ query string (mặc định là trang 1)
+    current_page = int(request.args.get('page', 1))
+    total_pages = len(book['pages'])  # Số trang tổng cộng
+
+    # Kiểm tra nếu current_page không vượt quá tổng số trang
+    if current_page > total_pages:
+        current_page = total_pages
+    elif current_page < 1:
+        current_page = 1
+
+    return render_template('book.html', username=username, book=book, current_page=current_page, total_pages=total_pages)
+
+from flask import flash, redirect, url_for, session
+from bson.objectid import ObjectId
+
+@app.route('/save_book/<username>/<book_id>', methods=['POST'])
+def save_book(username, book_id):
+    if 'username' not in session or session['username'] != username:
+        flash("Vui lòng đăng nhập", "danger")
+        return redirect(url_for('login')) 
+
+    # Kiểm tra nếu sách tồn tại trong database
+    book = mongo.db.books.find_one({"_id": ObjectId(book_id)})
+    if book:
+        if username not in book.get("username", []):
+            mongo.db.books.update_one(
+                {"_id": ObjectId(book_id)},
+                {"$push": {"username": username}}  
+            )
+            flash("Sách đã được lưu vào My Book", "success")
+        else:
+            flash("Sách đã được lưu rồi.", "info")
+    else:
+        flash("Không tìm thấy sách.", "danger")
+
+    return redirect(url_for('my_books', username=username))  
+@app.route('/my_books/<username>')
+def my_books(username):
+    if 'username' not in session or session['username'] != username:
+        flash("Vui lòng đăng nhập trước khi xem My Books", "danger")
+        return redirect(url_for('login'))
+
+    # Lọc sách theo username
+    books_cursor = mongo.db.books.find({"username": username})
+    books = list(books_cursor)  # Chuyển đổi Cursor thành danh sách
+
+    # Tính số lượng sách
+    book_count = len(books)
+
+    return render_template('my_book.html', books=books, book_count=book_count, username=username)
 
 @app.route('/<username>/recipes')
 def recipes(username):
