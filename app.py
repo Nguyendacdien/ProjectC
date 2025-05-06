@@ -16,10 +16,16 @@ from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from forms import CommentForm
+from flask_session import Session
 
 load_dotenv(find_dotenv())
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'dienmoidaide'  # Thay bằng một chuỗi ngẫu nhiên
+app.config['SESSION_TYPE'] = 'filesystem'  # Hoặc 'mongodb', 'redis'
+app.config['SESSION_PERMANENT'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Session kéo dài 1 giờ
+Session(app)
 
 # Cấu hình thư mục lưu file
 UPLOAD_FOLDER = 'static/uploads'
@@ -538,7 +544,7 @@ def view_recipe(username, recipe_id):
     
     if not the_recipe or (the_recipe.get('is_public', False) == False and session.get('username') != username):
         flash('Recipe not found or not accessible.', 'error')
-        return redirect(url_for('recipes', username=username, limit=10, offset=0))
+        return redirect(url_for('recipes', username=session.get('username', 'guest'), limit=10, offset=0))
 
     # Get Voting Details of Selected Recipe
     the_recipe_vote = mongo.db.recipes.find_one({"recipeID": int(recipe_id)}, {'upvotes': 1, 'downvotes': 1})
@@ -548,38 +554,69 @@ def view_recipe(username, recipe_id):
     # Form comment
     comment_form = CommentForm()
 
+    # Kiểm tra lịch sử bỏ phiếu
+    user_vote = mongo.db.votes.find_one({
+        "username": session.get('username', 'anonymous'),
+        "recipe_id": int(recipe_id)
+    })
+
     # If a Button is Pressed (Vote or Comment)
     if request.method == "POST":
         if 'vote' in request.form:
+            current_user = session.get('username', 'anonymous')
+            if user_vote:
+                flash('You have already voted on this recipe.', 'error')
+                return redirect(url_for('view_recipe', username=current_user, recipe_id=recipe_id))
+            elif current_user == the_recipe['author']:
+                flash('You cannot vote on your own recipe.', 'error')
+                return redirect(url_for('view_recipe', username=current_user, recipe_id=recipe_id))
+
             # If Upvote
             if request.form['vote'] == "upvote":
                 upvote = current[0]['upvotes'] + 1
                 recipes.update_one({'recipeID': int(recipe_id)}, {'$set': {'upvotes': upvote}})
+                # Lưu lịch sử bỏ phiếu
+                mongo.db.votes.insert_one({
+                    "username": current_user,
+                    "recipe_id": int(recipe_id),
+                    "vote_type": "upvote",
+                    "timestamp": datetime.utcnow().isoformat() + 'Z'
+                })
                 flash('Đã tăng lượt thích!', 'success')
-                # Tạo thông báo
-                create_notification(
-                    the_recipe['author'],
-                    "upvote",
-                    int(recipe_id),
-                    session.get('username', 'anonymous'),
-                    f"{session.get('username', 'Someone')} upvoted your recipe '{the_recipe['name']}'"
-                )
-                return redirect(f'/{username}/view_recipe/{recipe_id}')
+                # Tạo thông báo (không gửi cho chính tác giả)
+                if current_user != the_recipe['author']:
+                    create_notification(
+                        the_recipe['author'],
+                        "upvote",
+                        int(recipe_id),
+                        current_user,
+                        f"{current_user} upvoted your recipe '{the_recipe['name']}'"
+                    )
             
             # If Downvote
             elif request.form['vote'] == "downvote":
                 downvote = current[0]['downvotes'] + 1
                 recipes.update_one({'recipeID': int(recipe_id)}, {'$set': {'downvotes': downvote}})
+                # Lưu lịch sử bỏ phiếu
+                mongo.db.votes.insert_one({
+                    "username": current_user,
+                    "recipe_id": int(recipe_id),
+                    "vote_type": "downvote",
+                    "timestamp": datetime.utcnow().isoformat() + 'Z'
+                })
                 flash('Đã tăng lượt không thích!', 'success')
-                # Tạo thông báo
-                create_notification(
-                    the_recipe['author'],
-                    "downvote",
-                    int(recipe_id),
-                    session.get('username', 'anonymous'),
-                    f"{session.get('username', 'Someone')} downvoted your recipe '{the_recipe['name']}'"
-                )
-                return redirect(f'/{username}/view_recipe/{recipe_id}')
+                # Tạo thông báo (không gửi cho chính tác giả)
+                if current_user != the_recipe['author']:
+                    create_notification(
+                        the_recipe['author'],
+                        "downvote",
+                        int(recipe_id),
+                        current_user,
+                        f"{current_user} downvoted your recipe '{the_recipe['name']}'"
+                    )
+            
+            # Chuyển hướng về recipes với username từ session
+            return redirect(url_for('recipes', username=current_user, limit=10, offset=0))
         
         elif comment_form.validate_on_submit() and 'comment' in request.form:
             if 'username' not in session:
@@ -597,17 +634,21 @@ def view_recipe(username, recipe_id):
                     {'$push': {'comments': new_comment}}
                 )
                 flash('Comment added successfully!', 'success')
-                # Tạo thông báo
-                create_notification(
-                    the_recipe['author'],
-                    "comment",
-                    int(recipe_id),
-                    session['username'],
-                    f"{session['username']} commented on your recipe '{the_recipe['name']}'"
-                )
+                # Tạo thông báo (không gửi cho chính tác giả)
+                if session['username'] != the_recipe['author']:
+                    create_notification(
+                        the_recipe['author'],
+                        "comment",
+                        int(recipe_id),
+                        session['username'],
+                        f"{session['username']} commented on your recipe '{the_recipe['name']}'"
+                    )
             else:
                 flash('Only public recipes can be commented on.', 'error')
-            return redirect(f'/{username}/view_recipe/{recipe_id}')
+            # Chuyển hướng về recipes với username từ session
+            return redirect(url_for('recipes', username=session['username'], limit=10, offset=0))
+    
+    # Lấy số lượng thông báo chưa đọc
     unread_notifications = mongo.db.notifications.count_documents({
         "username": username,
         "read": False
