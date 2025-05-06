@@ -1,9 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
 <!DOCTYPE html>
 <html lang="vi">
 
 <head>
     <meta charset="UTF-8">
     <title>Đọc sách: {{ book.title }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -17,6 +21,7 @@
             margin-bottom: 20px;
             text-decoration: none;
             color: #555;
+            font-size: 1.1rem;
         }
 
         h1 {
@@ -25,6 +30,7 @@
         }
 
         .page {
+            position: relative;
             margin-bottom: 30px;
             text-align: center;
         }
@@ -35,26 +41,102 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
         }
 
         .page-number {
             margin-top: 5px;
             color: #666;
         }
+
+        .pagination {
+            display: none;
+            justify-content: space-between;
+            margin-top: 20px;
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            transform: translateY(-50%);
+        }
+
+        .pagination button {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            background-color: white;
+            color: black;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            width: 70px;
+            height: 70px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            /* hiệu ứng làm mờ nền (nếu trình duyệt hỗ trợ) */
+        }
+
+
+        .pagination button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .pagination button:hover {
+            background-color: #45a049;
+            transform: scale(1.1);
+        }
+
+        .pagination a {
+            text-decoration: none;
+        }
+
+        .pagination button i {
+            font-size: 1.8rem;
+            /* Tăng kích thước của icon */
+        }
     </style>
 </head>
 
 <body>
-    <a href="{{ url_for('books') }}" class="back">← Quay về danh sách sách</a>
+    <a href="{{ url_for('books', username=username) }}" class="back">← Quay về danh sách sách</a>
     <h1>{{ book.title }}</h1>
 
-    {% for p in book.pages %}
+    {% if book.pages %}
     <div class="page">
-        <img src="..{{ p.image_url }}" alt="Page {{ p.page_number }}"
-            onerror="this.src='/static/images/default_cover.jpg'">
-        <div class="page-number">Trang {{ p.page_number }}</div>
+        <img src="{{ book.pages[current_page - 1].image_url }}" alt="Trang {{ current_page }}"
+            onerror="this.src='/static/images/default_cover.jpg'" id="book-page">
     </div>
-    {% endfor %}
+
+    <!-- Nút "Trang trước" và "Trang sau" với icon -->
+    <div class="pagination" id="pagination">
+        <a href="{{ url_for('view_book', username=username, book_id=book._id, page=current_page - 1) }}">
+            <button {% if current_page==1 %} disabled {% endif %}>
+                <i class="fas fa-chevron-left"></i> <!-- Icon mũi tên trái -->
+            </button>
+        </a>
+        <a href="{{ url_for('view_book', username=username, book_id=book._id, page=current_page + 1) }}">
+            <button {% if current_page==total_pages %} disabled {% endif %}>
+                <i class="fas fa-chevron-right"></i> <!-- Icon mũi tên phải -->
+            </button>
+        </a>
+    </div>
+    </div>
+    {% else %}
+    <p>Không có trang nào.</p>
+    {% endif %}
+
+    <script>
+        // Lấy phần tử hình ảnh và phần tử chứa nút điều hướng
+        const bookPage = document.getElementById('book-page');
+        const pagination = document.getElementById('pagination');
+
+        // Khi người dùng nhấp vào ảnh, hiển thị các nút điều hướng
+        bookPage.addEventListener('click', function () {
+            pagination.style.display = 'flex';
+        });
+    </script>
+
 </body>
 
 </html>
+{% endblock %}

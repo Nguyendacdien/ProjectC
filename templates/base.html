@@ -13,12 +13,25 @@
     rel='stylesheet' type='text/css'>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=SchroedersDiet&display=swap" rel="stylesheet">
   <!-- Plugin CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/magnific-popup.css" />
 
   <!-- Custom CSS -->
   <link rel="stylesheet" href="/static/css/creative.css" type="text/css" />
+
+  <!-- Thêm CSS inline cho hiệu ứng đỏ -->
+  <style>
+    .has-unread {
+      color: #ff0000 !important;
+      /* Màu đỏ cho chữ */
+    }
+
+    .has-unread i {
+      color: #ff0000 !important;
+      /* Màu đỏ cho icon */
+    }
+  </style>
 
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -55,12 +68,62 @@
             <a class="nav-link js-scroll-trigger" href="{{url_for('add_recipe', username=username)}}">Add Recipe</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link js-scroll-trigger" href="{{url_for('books')}}">Book</a>
+            <a class="nav-link js-scroll-trigger" href="{{url_for('books',username=username)}}">Book</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link js-scroll-trigger" href="{{url_for('my_books',username=username,book_id=book_id)}}">My
+              Book</a>
+          </li>
+          <!-- User Dropdown -->
+          <li class="nav-item dropdown">
+            {% if 'username' in session %}
+            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown"
+              aria-expanded="false">
+              <!-- Avatar -->
+              <img
+                src="/{% if session['username'] %}static/images/{{ session['username'] }}_avt.jpg{% else %}/static/images/default.jpg{% endif %}"
+                alt="Avatar" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;"
+                onerror="this.src='/static/images/default.jpg'">
+              {{ session['username'] }}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown"
+              style="background-color: #2E3856; color: #ffffff;">
+              <!-- Thông báo -->
+              <li>
+                <a class="dropdown-item text-white position-relative {% if unread_notifications and unread_notifications > 0 %}has-unread{% endif %}"
+                  href="{{ url_for('notifications', username=session['username']) }}">
+                  <i class="fas fa-bell me-2"></i>Thông báo
+                  {% if unread_notifications and unread_notifications > 0 %}
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {{ unread_notifications }}
+                    <span class="visually-hidden">unread notifications</span>
+                  </span>
+                  {% endif %}
+                </a>
+              </li>
+              <!-- Cài đặt -->
+              <li>
+                <a class="dropdown-item text-white" href="{{ url_for('settings', username=session['username']) }}">
+                  <i class="fas fa-gear me-2"></i>Cài đặt
+                </a>
+              </li>
+              <!-- Đăng xuất -->
+              <li>
+                <a class="dropdown-item text-white" href="{{ url_for('logout') }}">
+                  <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                </a>
+              </li>
+            </ul>
+            {% else %}
+            <a class="nav-link" href="{{ url_for('login') }}">Đăng nhập</a>
+            {% endif %}
           </li>
         </ul>
       </div>
     </div>
   </nav>
+
+  <!-- Flash Messages (giữ nguyên cho các thông báo khác) -->
   {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
   <div class="container mt-5 pt-4" style="z-index: 1050; position: relative;">
@@ -77,6 +140,7 @@
   {% endwith %}
 
   {% block content %} {% endblock %}
+
   <!-- Bootstrap JS -->
   <script src="/static/js/jquery.js"></script>
   <script src="/static/js/bootstrap.js"></script>
