@@ -1,50 +1,119 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container my-5">
-    <h2 class="text-white my-4">Công thức của tôi</h2>
-    <div class="recipe-list">
-        {% for recipe in recipes %}
-        <a href="{{ url_for('view_recipe', username=username, recipe_id=recipe.recipeID) }}" style="text-decoration: none;">
-            <div class="recipe-item mb-3 p-3 rounded" style="background-color: #2E3856; color: #ffffff;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <!-- Tên công thức và quốc gia -->
-                    <div>
-                        <h5 class="mb-1">{{ recipe.name.title() }}</h5>
-                        <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
+<div class="container-full-bg">
+    <div class="jumbotron">
+        <div class="container my-5 px-0">
+            <h2 class="text-dark mb-4" style="font-family: 'SchroedersDiet', Georgia, serif; text-transform: uppercase; font-weight: bold;">
+                CÔNG THỨC CỦA TÔI
+            </h2>
+
+            <!-- Danh sách công thức dạng card -->
+            <div class="card-container">
+                {% for recipe in recipes %}
+                <a href="{{ url_for('view_recipe', username=username, recipe_id=recipe.recipeID) }}" 
+                   class="recipe-link" 
+                   data-country="{{ recipe.country|lower }}"
+                   style="text-decoration: none; color: inherit;">
+                    <div class="recipe-card" 
+                         style="background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('{{ url_for('static', filename=recipe.background_image) if recipe.background_image else url_for('static', filename='images/dishDF.jpg') }}');">
+                        <div class="card-content">
+                            <div class="row">
+                                <div class="col-8">
+                                    <h5 class="title" style="font-family: 'Times New Roman', Times, serif; margin: 5px 0;">{{ recipe.name.title() }}</h5>
+                                    <p class="author" style="font-size: 0.9rem; opacity: 0.8; margin: 0;">Quốc gia: {{ recipe.country.title() }}</p>
+                                </div>
+                                <div class="col-4 text-right">
+                                    <div class="d-flex align-items-center justify-content-end gap-3 mt-2">
+                                        <!-- Upvotes -->
+                                        <div class="d-flex align-items-center" style="background: rgba(0,0,0,0.5); padding: 2px 5px; border-radius: 10px;">
+                                            <i class="fa fa-thumbs-up me-1" style="color: #28a745;"></i>
+                                            <span style="font-size: 0.8rem;">{{ recipe.upvotes if recipe.upvotes else 0 }}</span>
+                                        </div>
+                                        <!-- Downvotes -->
+                                        <div class="d-flex align-items-center" style="background: rgba(0,0,0,0.5); padding: 2px 5px; border-radius: 10px;">
+                                            <i class="fa fa-thumbs-down me-1" style="color: #dc3545;"></i>
+                                            <span style="font-size: 0.8rem;">{{ recipe.downvotes if recipe.downvotes else 0 }}</span>
+                                        </div>
+                                    </div>
+                                    <!-- Avatar -->
+                                    <div class="d-flex align-items-center justify-content-end mt-2">
+                                        <img src="{{ url_for('static', filename='images/' + recipe.author + '_avt.jpg') }}"
+                                             onerror="this.src='{{ url_for('static', filename='images/default.jpg') }}'"
+                                             class="avatar"
+                                             style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid white;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <!-- Thông tin bổ sung -->
-                    <div class="d-flex align-items-center gap-3">
-                        <!-- Số lượt upvotes -->
-                        <div class="d-flex align-items-center">
-                            <i class="fa fa-thumbs-up me-1" style="color: #28a745;"></i>
-                            <span>{{ recipe.upvotes if recipe.upvotes else 0 }} lượt thích</span>
-                        </div>
-                        <!-- Số lượt downvotes -->
-                        <div class="d-flex align-items-center">
-                            <i class="fa fa-thumbs-down me-1" style="color: #dc3545;"></i>
-                            <span>{{ recipe.downvotes if recipe.downvotes else 0 }} không thích</span>
-                        </div>
-                        <!-- Tác giả -->
-                        <div class="d-flex align-items-center">
-                            <img src="{{ url_for('static', filename='images/' + recipe.author + '_avt.jpg') }}"
-                            data-default="{{ url_for('static', filename='images/default.jpg') }}"
-                            alt="Avatar"
-                            class="avatar"
-                            style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
-                        </div>
-                    </div>
-                </div>
+                </a>
+                {% endfor %}
             </div>
-        </a>
-        {% endfor %}
+        </div>
     </div>
 </div>
+
+<style>
+    /* Card container styling */
+    .card-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0;
+    }
+
+    /* Recipe card styling */
+    .recipe-card {
+        background-color: #2E3856;
+        color: #ffffff;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.3s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        height: 200px;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+    }
+
+    .recipe-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Card content styling */
+    .card-content {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 15px;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    }
+
+    .title {
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+
+    .author {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+        margin-bottom: 0;
+        text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .card-container {
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        }
+    }
+</style>
 {% endblock %}
-<script>
-    document.querySelectorAll('.avatar').forEach(img => {
-      img.onerror = function () {
-        this.src = this.dataset.default;
-      }
-    });
-  </script>

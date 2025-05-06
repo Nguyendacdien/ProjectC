@@ -2,43 +2,51 @@
 
 {% block content %}
 <div class="container my-5">
-    <div class="row">
-        <!-- Cột trái: Nội dung công thức -->
-        <div class="col-md-6">
-            <!-- Recipe Header -->
-            <div class="mb-4">
-                <h2 class="fw-bold text-uppercase" style="color: #ffffff; font-size: 2.5rem;">{{ recipe.name.title() }}</h2>
-                <p style="color: #ffffff; font-size: 1.1rem;">{{ recipe.description }}</p>
-                <!-- Nút vote và dropdown -->
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex gap-3">
-                        <form method="POST" id="formUpvote">
-                            <button class="btn btn-success" type="submit" name="vote" value="upvote">
-                                <i class="fa fa-thumbs-up"></i> {{ recipe.upvotes }}
-                            </button>
-                        </form>
-                        <form method="POST" id="formDownvote">
-                            <button class="btn btn-danger" type="submit" name="vote" value="downvote">
-                                <i class="fa fa-thumbs-down"></i> {{ recipe.downvotes }}
-                            </button>
-                        </form>
-                    </div>
-                    <div class="dropdown">
-                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fa fa-ellipsis-v"></i>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end" style="background-color: #333333;">
-                            <li><a class="dropdown-item" href="{{ url_for('edit_recipe', username=username, recipe_id=recipe.recipeID) }}" style="color: #ffffff;" onmouseover="this.style.backgroundColor='#e9ecef'; this.style.color='#000000';" onmouseout="this.style.backgroundColor=''; this.style.color='#ffffff';">Edit</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('delete_recipe', username=username, recipe_id=recipe.recipeID) }}" onclick="return confirm('Delete this recipe?')" style="color: #ffffff;" onmouseover="this.style.backgroundColor='#e9ecef'; this.style.color='#000000';" onmouseout="this.style.backgroundColor=''; this.style.color='#ffffff';">Delete</a></li>
-                        </ul>
-                    </div>
-                </div>
+    <!-- Recipe Name & Description -->
+    <!-- Recipe Title + Dropdown (Right Aligned) -->
+    <div class="mb-4 pt-4 d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1 text-center">
+            <h2 class="fw-bold text-uppercase mb-2" style="color: #333; font-size: 2.5rem;">{{ recipe.name.title() }}</h2>
+            <p class="lead" style="color: #333;">{{ recipe.description }}</p>
+        </div>
+        
+        {% if username == recipe.author %}
+            <div class="dropdown ms-3">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa fa-ellipsis-v"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" style="background-color: #333333;">
+                    <li>
+                        <a class="dropdown-item"
+                        href="{{ url_for('edit_recipe', username=username, recipe_id=recipe.recipeID) }}"
+                        style="color: #ffffff;"
+                        onmouseover="this.style.backgroundColor='#e9ecef'; this.style.color='#000000';"
+                        onmouseout="this.style.backgroundColor=''; this.style.color='#ffffff';">
+                            Edit
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item"
+                        href="{{ url_for('delete_recipe', username=username, recipe_id=recipe.recipeID) }}"
+                        onclick="return confirm('Delete this recipe?')"
+                        style="color: #ffffff;"
+                        onmouseover="this.style.backgroundColor='#e9ecef'; this.style.color='#000000';"
+                        onmouseout="this.style.backgroundColor=''; this.style.color='#ffffff';">
+                            Delete
+                        </a>
+                    </li>
+                </ul>
             </div>
+        {% endif %}
+    </div>
 
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-md-6">
             <!-- Ingredients -->
             <div class="mb-4">
-                <h5 class="fw-bold mb-3" style="color: #ffffff;"><i class="fa fa-carrot me-2"></i>Ingredients</h5>
-                <ul class="list-unstyled" style="color: #ffffff;">
+                <h5 class="fw-bold mb-3" style="color: #333;">Ingredients</h5>
+                <ul class="list-unstyled" style="color: #333; padding-left: 1rem;">
                     {% for ingredient in recipe.ingredients %}
                         <li>- {{ ingredient }}</li>
                     {% endfor %}
@@ -47,74 +55,115 @@
 
             <!-- Instructions -->
             <div class="mb-4">
-                <h5 class="fw-bold mb-3" style="color: #ffffff;"><i class="fa fa-book-open me-2"></i>Instructions</h5>
-                <ol style="color: #ffffff;">
+                <h5 class="fw-bold mb-3" style="color: #333;">Instructions</h5>
+                <ol style="color: #333; padding-left: 1.2rem;">
                     {% for step in recipe.instructions %}
-                        <li style="color: #ffffff;">{{ step }}</li>
+                        <li class="mb-2">{{ step }}</li>
                     {% endfor %}
                 </ol>
             </div>
 
             <!-- Allergens -->
             <div class="mb-4">
-                <h5 class="fw-bold mb-3" style="color: #ffffff;"><i class="fa fa-allergies me-2"></i>Allergens</h5>
-                <p style="color: #ffffff;">{{ recipe.allergens | join(', ') }}</p>
+                <h5 class="fw-bold mb-3" style="color: #333;">Allergens</h5>
+                <p style="color: #333;">{{ recipe.allergens | join(', ') if recipe.allergens else 'None' }}</p>
             </div>
-
-            <!-- Country and Author -->
-            <div class="row">
-                <div class="col-md-6 mb-4">
-                    <h5 class="fw-bold mb-3" style="color: #ffffff;"><i class="fa fa-flag me-2"></i>Country of Origin</h5>
-                    <p style="color: #ffffff;">{{ recipe.country.title() }}</p>
-                </div>
-                <div class="col-md-6 mb-4">
-                    <h5 class="fw-bold mb-3" style="color: #ffffff;"><i class="fa fa-user me-2"></i>Author</h5>
-                    <p style="color: #ffffff;">{{ recipe.author.title() }}</p>
-                </div>
-            </div>
-
-            <!-- Comments Section -->
-            <div class="mb-4">
-                <h5 class="fw-bold mb-3" style="color: #ffffff;"><i class="fa fa-comments me-2"></i>Comments</h5>
-                {% if recipe.comments %}
-                    {% for comment in recipe.comments %}
-                        <div style="color: #ffffff; margin-bottom: 10px;">
-                            <strong>{{ comment.username.title() }}</strong> 
-                            <span style="font-size: 0.9rem; color: #ccc;">({{ comment.timestamp }})</span>
-                            <p>{{ comment.comment_text }}</p>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <p style="color: #ffffff;">No comments yet.</p>
-                {% endif %}
-            </div>
-
-            <!-- Comment Form -->
-            {% if recipe.is_public %}
-                <form method="POST">
-                    {{ comment_form.csrf_token }}
-                    <div class="mb-3">
-                        {{ comment_form.comment.label(class_="form-label text-white") }}
-                        {{ comment_form.comment(class_="form-control", rows="3") }}
-                        {% for error in comment_form.comment.errors %}
-                            <div class="text-danger">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <button type="submit" class="btn btn-primary">Post Comment</button>
-                </form>
-            {% else %}
-                <p style="color: #ffffff;">Comments are only allowed for public recipes.</p>
-            {% endif %}
         </div>
 
-        <!-- Cột phải: Ảnh công thức -->
-        <div class="col-md-6 d-flex align-items-center justify-content-center">
-            {% if recipe.image_url %}
-                <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); width: 400px; object-fit: cover;">
-            {% else %}
-                <p style="color: #ffffff; font-style: italic;">No image available</p>
+        <!-- Right Column: Carousel -->
+        <div class="col-md-6">
+            <!-- Carousel for All Images -->
+            {% if image_urls and image_urls|length > 0 %}
+                <div id="carouselExample" class="carousel slide" style="width: 100%; margin-left: 20px;">
+                    <div class="carousel-inner">
+                        {% for url in image_urls %}
+                            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                <img src="{{ url }}" class="d-block mx-auto carousel-image" style="width: 300px; height: 400px; object-fit: cover; border-radius: 10px;" alt="Recipe Image {{ loop.index }}">
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                </div>
             {% endif %}
         </div>
     </div>
+
+    <!-- Time & Meta Information -->
+    <div class="d-flex justify-content-center text-center my-5 flex-wrap" style="color: #333;">
+        <div class="px-4 border-end">
+            <div>Serves</div>
+            <div class="fw-bold">{{ recipe.serves if recipe.serves is defined else 'N/A' }}</div>
+        </div>
+        <div class="px-4 border-end">
+            <div>Prep Time</div>
+            <div class="fw-bold">{{ recipe.prep_time if recipe.prep_time is defined else 0 }} mins</div>
+        </div>
+        <div class="px-4 border-end">
+            <div>Cook Time</div>
+            <div class="fw-bold">{{ recipe.cook_time if recipe.cook_time is defined else 0 }} mins</div>
+        </div>
+        <div class="px-4 border-end">
+            <div>Total Time</div>
+            <div class="fw-bold">{{ recipe.total_time if recipe.total_time is defined else 0 }} mins</div>
+        </div>
+        <div class="px-4 border-end">
+            <div>Country</div>
+            <div class="fw-bold">{{ recipe.country.title() }}</div>
+        </div>
+        <div class="px-4">
+            <div>Author</div>
+            <div class="fw-bold">{{ recipe.author.title() }}</div>
+        </div>
+    </div>
+
+    <!-- Comments Section -->
+    <div class="mt-4" style="color: #333;">
+        <h5 class="fw-bold mb-3">Comments</h5>
+
+        <!-- Comment Form First -->
+        {% if recipe.is_public %}
+            <form method="POST" class="mb-4">
+                {{ comment_form.csrf_token }}
+                <div class="mb-2">
+                    {{ comment_form.comment.label(class_="form-label", style="color: #333;") }}
+                    {{ comment_form.comment(class_="form-control form-control-sm", rows="2", placeholder="Leave your comment here...") }}
+                    {% for error in comment_form.comment.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Submit</button>
+            </form>
+        {% else %}
+            <p>Comments are only allowed for public recipes.</p>
+        {% endif %}
+
+        <!-- Existing Comments Below -->
+        {% if recipe.comments %}
+            {% for comment in recipe.comments %}
+                <div style="margin-bottom: 10px;">
+                    <strong>{{ comment.username.title() }}</strong> 
+                    <span style="font-size: 0.9rem; color: #666;">({{ comment.timestamp }})</span>
+                    <p>{{ comment.comment_text }}</p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No comments yet.</p>
+        {% endif %}
+    </div>
 </div>
+
+<!-- Bootstrap Carousel Scripts -->
+<script>
+    const myCarousel = new bootstrap.Carousel('#carouselExample', {
+        interval: false, // Tắt hoàn toàn tự động chuyển
+        wrap: true
+    });
+</script>
 {% endblock %}

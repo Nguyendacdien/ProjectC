@@ -72,7 +72,42 @@
         if (y < 2) {
             $("#ing-remove").css("display", "none");
         }
-        
-    
-    
     }
+    document.querySelector("form.needs-validation").addEventListener("submit", function (e) {
+        let valid = true;
+    
+        // Kiểm tra instructions
+        document.querySelectorAll(".instructionClass").forEach((el) => {
+            if (el.value.trim() === "") {
+                el.classList.add("is-invalid");
+                valid = false;
+            } else {
+                el.classList.remove("is-invalid");
+            }
+        });
+    
+        // Kiểm tra ingredients
+        document.querySelectorAll(".ingredientClass").forEach((el) => {
+            if (el.value.trim() === "") {
+                el.classList.add("is-invalid");
+                valid = false;
+            } else {
+                el.classList.remove("is-invalid");
+            }
+        });
+    
+        // Kiểm tra allergens
+        document.querySelectorAll(".allergenClass").forEach((el) => {
+            if (el.value.trim() === "") {
+                el.classList.add("is-invalid");
+                valid = false;
+            } else {
+                el.classList.remove("is-invalid");
+            }
+        });
+    
+        if (!valid) {
+            e.preventDefault(); // Ngăn submit nếu có trường bị bỏ trống
+            alert("Please fill in all added fields before submitting.");
+        }
+    });

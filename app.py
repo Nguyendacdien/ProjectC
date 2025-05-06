@@ -17,7 +17,9 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 from forms import CommentForm
 from flask_session import Session
-
+from unidecode import unidecode
+from datetime import datetime
+from os.path import basename
 load_dotenv(find_dotenv())
 
 app = Flask(__name__)
@@ -35,7 +37,11 @@ app.secret_key = os.getenv('SECRET')
 
 app.config["MONGO_DBNAME"] = os.getenv('DBNAME')
 app.config["MONGO_URI"] = os.getenv('URI')
-
+#tạo thưu muc upload nếu ch có
+UPLOAD_FOLDER = 'static/uploads/recipes'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 mongo = PyMongo(app)
 
 # Hàm kiểm tra định dạng file
@@ -53,9 +59,6 @@ def create_notification(username, type, recipe_id, from_username, message):
         "read": False
     }
     mongo.db.notifications.insert_one(notification)
-# Tạo thư mục uploads nếu chưa có
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -155,55 +158,40 @@ def recipes(username):
         return redirect(url_for('login'))
 
     recipes_collection = mongo.db.recipes
-    # Truy vấn tất cả công thức với is_public: True
     all_recipes = recipes_collection.find({"is_public": True}).sort("_id", 1)
     recipe_list = list(all_recipes)
 
-    # Phân trang
-    limit = request.args.get('limit', default=10, type=int)
+    limit = request.args.get('limit', default=9, type=int)  # 9 card (3x3 mỗi trang)
     offset = request.args.get('offset', default=0, type=int)
     
     count = len(recipe_list)
     pages = get_pages(count, limit)
     url_list = generate_pagination_links(offset, limit, pages, 'recipes', 'null', username)
 
-    # Lấy last_id để phân trang
     starting_position = offset
     if recipe_list and starting_position < count:
         last_id = recipe_list[starting_position]['_id']
     else:
         last_id = None
 
-    # Tạo 5 danh sách công thức đã sắp xếp
     sort_default = list(recipes_collection.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("_id", 1)]).limit(limit))
     sort_name = list(recipes_collection.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("name", 1)]).limit(limit))
     sort_upvotes = list(recipes_collection.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("upvotes", pymongo.DESCENDING), ("name", 1)]).limit(limit))
     sort_downvotes = list(recipes_collection.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("downvotes", pymongo.DESCENDING), ("name", 1)]).limit(limit))
     sort_author = list(recipes_collection.find({"is_public": True, '_id': {'$gte': last_id}}).sort([("author", 1), ("name", 1)]).limit(limit))
 
-    # Kiểm tra và gán đường dẫn ảnh cho từng công thức trong các danh sách
     for sort_list in [sort_default, sort_name, sort_upvotes, sort_downvotes, sort_author]:
         for recipe in sort_list:
             avatar_path = f"static/images/{recipe['author']}_avt.jpg"
-            # Nếu recipe.author không phải người dùng hiện tại
-            if recipe['author'] != session['username']:
-                # Chỉ hiển thị ảnh mặc định nếu không có ảnh của author
-                if os.path.exists(avatar_path):
-                    recipe['avatar_url'] = url_for('static', filename=f"images/{recipe['author']}_avt.jpg")
-                else:
-                    recipe['avatar_url'] = url_for('static', filename="images/default.jpg")
+            if os.path.exists(avatar_path):
+                recipe['avatar_url'] = url_for('static', filename=f"images/{recipe['author']}_avt.jpg")
             else:
-                # Nếu là người dùng hiện tại, giữ nguyên logic hiện tại
-                if os.path.exists(avatar_path):
-                    recipe['avatar_url'] = url_for('static', filename=f"images/{recipe['author']}_avt.jpg")
-                else:
-                    recipe['avatar_url'] = url_for('static', filename="images/default.jpg")
+                recipe['avatar_url'] = url_for('static', filename="images/default.jpg")
+            recipe['image_path'] = recipe.get('image_path', 'dishDF.jpg')
 
-    # Đọc dữ liệu từ countries.json
     with open('data/countries.json', 'r', encoding='utf-8') as f:
         countries_data = json.load(f)
     
-    # Lấy danh sách tên quốc gia (bỏ mục đầu tiên "Choose a Country of Origin")
     countries = [country['name'] for country in countries_data if country['name'] != "Choose a Country of Origin"]
     unread_notifications = mongo.db.notifications.count_documents({
         "username": username,
@@ -293,10 +281,12 @@ def add_recipe(username):
     if 'username' not in session or session['username'] != username:
         flash('Login first', 'error')
         return redirect(url_for('login'))
+
     unread_notifications = mongo.db.notifications.count_documents({
         "username": username,
         "read": False
     })
+
     # Load form
     wtform = ReusableForm()
 
@@ -323,40 +313,71 @@ def add_recipe(username):
         if request.form['allergen1']:
             allergens.insert(0, request.form['allergen1'])
 
-        # Xử lý file ảnh
-        image_url = None
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
-                image_url = f"/static/uploads/{filename}"
+        # Xử lý danh sách ảnh
+        images = request.files.getlist('images')
+        if not images or all(img.filename == '' for img in images):
+            flash('Please upload at least one image for the recipe.', 'error')
+            return render_template("add_recipe.html", form=wtform, errors=wtform.errors, username=username, unread_notifications=unread_notifications)
 
+        # Kiểm tra xem tên công thức đã tồn tại chưa
         if search_name(request.form['name'], name_list):
             flash('That recipe already exists. Please enter another.', 'error')
-            return render_template("add_recipe.html", form=wtform, errors=wtform.errors, username=username)
-        else:
-            # Get public from form
-            is_public = wtform.is_public.data
+            return render_template("add_recipe.html", form=wtform, errors=wtform.errors, username=username, unread_notifications=unread_notifications)
 
-            # Insert New Recipe to Database
-            recipes.insert_one({
-                'name': request.form['name'],
-                'description': request.form['description'],
-                'instructions': instructions,
-                'upvotes': 0,
-                'downvotes': 0,
-                'ingredients': ingredients,
-                'allergens': allergens,
-                'country': request.form['country'],
-                'author': session['username'],
-                'recipeID': (count_list[0]['recipeID'] + 1) if count_list else 1,
-                'is_public': is_public,
-                'image_url': image_url  # Lưu image_url
-            })
-            flash('Recipe added successfully!')
-            return redirect(url_for('recipes', username=username, limit=10, offset=0))
+        # Tạo recipeID
+        recipe_id = (count_list[0]['recipeID'] + 1) if count_list else 1
+
+        # Lưu các ảnh vào thư mục và chuẩn hóa tên
+        image_paths = []
+        for index, image in enumerate(images):
+            if image and image.filename != '' and allowed_file(image.filename):
+                # Chuẩn hóa tên file
+                original_filename = secure_filename(image.filename)
+                extension = os.path.splitext(original_filename)[1]
+                short_name = f"{recipe_id}_{index}{extension}"
+                image_name = short_name
+                image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_name)
+                image.save(image_path)
+                image_paths.append(f"uploads/recipes/{image_name}")
+
+        # Lấy chỉ số ảnh được chọn làm background
+        background_index = int(request.form.get('background_image', 0))
+        if background_index >= len(image_paths):
+            background_index = 0
+
+        # Lấy các trường mới
+        serves = int(request.form['serves'])
+        prep_time = int(request.form['prep_time'])
+        cook_time = int(request.form['cook_time'])
+        total_time = prep_time + cook_time
+
+        # Get public from form
+        is_public = wtform.is_public.data
+
+        # Insert New Recipe to Database
+        recipes.insert_one({
+            'name': request.form['name'],
+            'description': request.form['description'],
+            'instructions': instructions,
+            'upvotes': 0,
+            'downvotes': 0,
+            'ingredients': ingredients,
+            'allergens': allergens,
+            'country': request.form['country'],
+            'author': session['username'],
+            'recipeID': recipe_id,
+            'is_public': is_public,
+            'images': image_paths,
+            'background_image': image_paths[background_index],
+            # Thêm các trường mới
+            'serves': serves,
+            'prep_time': prep_time,
+            'cook_time': cook_time,
+            'total_time': total_time
+        })
+
+        flash('Recipe added successfully!')
+        return redirect(url_for('recipes', username=username, limit=10, offset=0))
 
     # Render Add Recipe Page
     return render_template("add_recipe.html", form=wtform, errors=wtform.errors, username=username, unread_notifications=unread_notifications)
@@ -432,107 +453,154 @@ def add_recipe(username):
 #route edit moimoi
 @app.route('/<username>/edit_recipe/<recipe_id>', methods=['GET', 'POST'])
 def edit_recipe(username, recipe_id):
-    # Check if user is logged in and authorized
     if 'username' not in session or session['username'] != username:
         flash('Please log in to edit this recipe.', 'error')
         return redirect(url_for('login'))
 
-    # Get recipe from MongoDB
-    recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id)})
+    # Get the recipe
+    recipes = mongo.db.recipes
+    recipe = recipes.find_one({"recipeID": int(recipe_id), "author": username})
+
     if not recipe:
-        flash('Recipe not found.', 'error')
+        flash('Recipe not found or you do not have permission to edit it.', 'error')
         return redirect(url_for('my_recipes', username=username))
 
-    # Initialize form with current recipe data
-    form = ReusableForm(
-        name=recipe['name'],
-        description=recipe['description'],
-        instruction1=recipe['instructions'][0] if recipe['instructions'] else "",
-        ingredient1=recipe['ingredients'][0] if recipe['ingredients'] else "",
-        allergen1=recipe['allergens'][0] if recipe['allergens'] else "",
-        country=recipe['country'],
-        is_public=recipe.get('is_public', False)
-    )
+    # Load form
+    form = ReusableForm()
+
+    # Get unread notifications count
+    unread_notifications = mongo.db.notifications.count_documents({
+        "username": username,
+        "read": False
+    })
 
     if request.method == 'POST' and form.validate_on_submit():
-        # Collect instructions
-        instructions = []
-        for key, value in request.form.items():
-            if key.startswith('instruction') and value.strip():
-                instructions.append(value.strip())
+        # Merge Additional Instruction Fields
+        instructions = request.form.getlist('instruction2')
+        instructions.insert(0, request.form['instruction1'])
 
-        # Collect ingredients
-        ingredients = []
-        for key, value in request.form.items():
-            if key.startswith('ingredient') and value.strip():
-                ingredients.append(value.strip())
+        # Merge Additional Ingredients Fields
+        ingredients = request.form.getlist('ingredient2')
+        ingredients.insert(0, request.form['ingredient1'])
 
-        # Collect allergens
-        allergens = []
-        for key, value in request.form.items():
-            if key.startswith('allergen') and value.strip():
-                allergens.append(value.strip())
+        # Merge Additional Allergens Fields
+        allergens = request.form.getlist('allergen2')
+        allergens.insert(0, request.form['allergen1'])
 
-        # Handle image upload
-        image_url = recipe.get('image_url')  # Keep existing image_url if no new image
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                try:
-                    file.save(file_path)
-                    image_url = f"/static/uploads/{filename}"
-                except Exception as e:
-                    flash(f"Failed to upload image: {str(e)}", 'error')
-                    return render_template("edit_recipe.html", form=form, recipe=recipe, username=username)
+        # Get current images
+        current_images = recipe['images']
+
+        # Handle images to remove
+        images_to_remove_raw = request.form.get('images_to_remove', '[]')
+        try:
+            images_to_remove = json.loads(images_to_remove_raw)
+        except json.JSONDecodeError:
+            images_to_remove = []
+        for image_path in images_to_remove:
+            if image_path in current_images:
+                current_images.remove(image_path)
+                # Delete the file from static folder
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(image_path))
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+
+        # Handle new images
+        new_images = request.files.getlist('new_images')
+        new_image_paths = []
+        for index, image in enumerate(new_images):
+            if image and image.filename != '' and allowed_file(image.filename):
+                image_name = f"{recipe['recipeID']}_{len(current_images) + index}{os.path.splitext(image.filename)[1]}"
+                image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_name)
+                image.save(image_path)
+                new_image_paths.append(f"uploads/recipes/{image_name}")
+
+        # Update images list
+        updated_images = current_images + new_image_paths
+
+        # Handle background image selection
+        background_index = int(request.form.get('background_image', 0))
+        if not updated_images:
+            flash('At least one image is required for the recipe.', 'error')
+            return redirect(url_for('edit_recipe', username=username, recipe_id=recipe_id))
+        if background_index >= len(updated_images):
+            background_index = 0
+        background_image = updated_images[background_index]
+
+        # Lấy các trường mới
+        serves = int(request.form['serves'])
+        prep_time = int(request.form['prep_time'])
+        cook_time = int(request.form['cook_time'])
+        total_time = prep_time + cook_time
 
         # Update recipe in MongoDB
-        updated_recipe = {
-            'name': request.form['name'],
-            'description': request.form['description'],
-            'instructions': instructions,
-            'ingredients': ingredients,
-            'allergens': allergens,
-            'country': request.form['country'],
-            'author': username,
-            'is_public': 'is_public' in request.form,
-            'image_url': image_url,
-            'upvotes': recipe.get('upvotes', 0),
-            'downvotes': recipe.get('downvotes', 0),
-            'comments': recipe.get('comments', []),
-            'recipeID': int(recipe_id)
-        }
-
-        mongo.db.recipes.update_one(
+        recipes.update_one(
             {"recipeID": int(recipe_id)},
-            {"$set": updated_recipe}
+            {
+                "$set": {
+                    "name": request.form['name'],
+                    "description": request.form['description'],
+                    "instructions": instructions,
+                    "ingredients": ingredients,
+                    "allergens": allergens,
+                    "country": request.form['country'],
+                    "is_public": form.is_public.data,
+                    "images": updated_images,
+                    "background_image": background_image,
+                    # Cập nhật các trường mới
+                    "serves": serves,
+                    "prep_time": prep_time,
+                    "cook_time": cook_time,
+                    "total_time": total_time
+                }
+            }
         )
+
         flash('Recipe updated successfully!', 'success')
-        return redirect(url_for('view_recipe', username=username, recipe_id=recipe_id))
+        return redirect(url_for('my_recipes', username=username))
 
-    return render_template("edit_recipe.html", form=form, recipe=recipe, username=username)
+    # Pre-fill form with current recipe data
+    form.name.data = recipe['name']
+    form.description.data = recipe['description']
+    form.instruction1.data = recipe['instructions'][0] if recipe['instructions'] else ''
+    form.ingredient1.data = recipe['ingredients'][0] if recipe['ingredients'] else ''
+    form.allergen1.data = recipe['allergens'][0] if recipe['allergens'] else ''
+    form.country.data = recipe['country']
+    form.is_public.data = recipe['is_public']
+    # Điền giá trị cho các trường mới
+    form.serves.data = recipe.get('serves', 1)
+    form.prep_time.data = recipe.get('prep_time', 0)
+    form.cook_time.data = recipe.get('cook_time', 0)
 
+    return render_template(
+        "edit_recipe.html",
+        form=form,
+        recipe=recipe,
+        username=username,
+        unread_notifications=unread_notifications
+    )
 @app.route('/<username>/delete_recipe/<recipe_id>', methods=['GET'])
 def delete_recipe(username, recipe_id):
     if 'username' not in session:
         flash('Vui lòng đăng nhập trước.', 'error')
         return redirect(url_for('login'))
-    if session['username'] != username:
-        flash('Bạn không thể chỉnh sửa công thức của người khác.', 'error')
-        return redirect(url_for('recipes', username=session['username']))
 
     # Lấy công thức để kiểm tra quyền
-    recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id), "author": username})
+    recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id)})
     if not recipe:
-        flash('Recipe not found or you do not have permission to delete.', 'error')
-        return redirect(url_for('my_recipes', username=username))
+        flash('Không tìm thấy công thức.', 'error')
+        return redirect(url_for('my_recipes', username=session['username']))
 
-    # Xóa công thức
+    # Kiểm tra quyền xoá
+    if session['username'] != recipe['author']:
+        flash('You are not authorized this recipe .', 'error')
+        return redirect(url_for('view_recipe', username=recipe['author'], recipe_id=recipe_id))
+
+    # Xoá công thức
     mongo.db.recipes.delete_one({"recipeID": int(recipe_id)})
 
-    flash('Recipe deleted successfully!', 'success')
-    return redirect(url_for('my_recipes', username=username))
+    flash('Xoá công thức thành công!', 'success')
+    return redirect(url_for('my_recipes', username=session['username']))
+
  #thêm comment
 @app.route('/<username>/view_recipe/<recipe_id>', methods=['GET', 'POST'])
 def view_recipe(username, recipe_id):
@@ -545,6 +613,16 @@ def view_recipe(username, recipe_id):
     if not the_recipe or (the_recipe.get('is_public', False) == False and session.get('username') != username):
         flash('Recipe not found or not accessible.', 'error')
         return redirect(url_for('recipes', username=session.get('username', 'guest'), limit=10, offset=0))
+
+    # Tạo danh sách URL ảnh cho carousel (bao gồm cả background_image)
+    image_urls = []
+    if the_recipe.get('images'):
+        for img in the_recipe['images']:
+            image_urls.append(url_for('static', filename=img))
+    # Thêm background_image nếu có và chưa trong danh sách
+    background_image = the_recipe.get('background_image')
+    if background_image and url_for('static', filename=background_image) not in image_urls:
+        image_urls.insert(0, url_for('static', filename=background_image))
 
     # Get Voting Details of Selected Recipe
     the_recipe_vote = mongo.db.recipes.find_one({"recipeID": int(recipe_id)}, {'upvotes': 1, 'downvotes': 1})
@@ -653,7 +731,7 @@ def view_recipe(username, recipe_id):
         "username": username,
         "read": False
     })
-    return render_template('view_recipe.html', recipe=the_recipe, username=username, comment_form=comment_form, unread_notifications=unread_notifications)
+    return render_template('view_recipe.html', recipe=the_recipe, username=username, comment_form=comment_form, unread_notifications=unread_notifications, image_urls=image_urls)
 # Route để lấy danh sách thông báo (tùy chọn)
 @app.route('/<username>/notifications')
 def notifications(username):
@@ -765,6 +843,17 @@ def change_password():
     
     flash('Mật khẩu đã được cập nhật thành công.')
     return redirect(url_for('settings'))
+# Hàm kiểm tra file hợp lệ
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Hàm chuẩn hóa tên file
+def generate_image_name(recipe_id, original_filename, index):
+    filename = os.path.splitext(original_filename)[0]
+    slug = unidecode(filename.lower()).replace(" ", "-")
+    slug = slug[:50] if len(slug) > 50 else slug
+    return f"{recipe_id}_{index}_{slug}.jpg"
 
 def create_collections_and_indexes():
     try:

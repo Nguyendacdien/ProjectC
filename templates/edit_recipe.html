@@ -6,9 +6,9 @@
         <div class="container">
             <div class="row recipe-page">
                 <div class="col-lg-12 mx-auto">
-                    <h1 class="text-uppercase text-white">
-                        <strong>Edit Recipe</strong>
-                    </h1>
+                    <h2 class="text-dark mb-4" style="font-family: 'SchroedersDiet', Georgia, serif; text-transform: uppercase; font-weight: bold;">
+                        Edit Recipe
+                    </h2>
                     <hr class="light">
                 </div>
             </div>
@@ -17,61 +17,81 @@
 
                 <div class="form-row">
                     <div class="col-md-6 mb-3">
-                        {{ form.name.label(class_="text-white") }}
+                        {{ form.name.label(class_="text-dark") }}
                         {{ form.name(class_="form-control", placeholder="Recipe Name", type="text", id="validationCustom01", autocomplete="off") }}
                         {% for message in form.name.errors %}
                         <div class="invalid text-danger">{{ message }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-md-6 mb-3">
-                        {{ form.description.label(class_="text-white") }}
+                        {{ form.description.label(class_="text-dark") }}
                         {{ form.description(class_="form-control", placeholder="Recipe Description", id="validationCustom02", autocomplete="off") }}
                         {% for message in form.description.errors %}
                         <div class="invalid text-danger">{{ message }}</div>
                         {% endfor %}
                     </div>
                 </div>
-                <!-- Thêm trường image và hiển thị ảnh hiện tại -->
+
+                <!-- Chỉnh sửa hình ảnh -->
                 <div class="form-row">
-                    <div class="col-md-6 mb-3">
-                        {{ form.image.label(class_="text-white") }}
-                        {{ form.image(class_="form-control", id="image", accept="image/*") }}
-                        {% for message in form.image.errors %}
-                        <div class="invalid text-danger">{{ message }}</div>
-                        {% endfor %}
-                        {% if recipe.image_url %}
-                            <div class="mt-2">
-                                <p class="text-white">Current Image:</p>
-                                <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" style="max-width: 200px; height: auto;">
+                    <div class="col-md-12 mb-3">
+                        <label class="text-dark">Current Images:</label>
+                        <div class="d-flex flex-wrap gap-3">
+                            {% for image in recipe.images %}
+                            <div class="image-container position-relative">
+                                <img src="{{ url_for('static', filename=image) }}" alt="Recipe Image" style="max-width: 150px; height: auto; border-radius: 5px;">
+                                <!-- Nút xóa ảnh -->
+                                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0" onclick="removeImage('{{ image }}')" style="transform: translate(50%, -50%);">X</button>
+                                <!-- Radio button để chọn background_image -->
+                                <div class="form-check mt-2 text-center">
+                                    <input type="radio" name="background_image" value="{{ loop.index0 }}" class="form-check-input" id="bg-{{ loop.index0 }}" {% if image == recipe.background_image %}checked{% endif %}>
+                                    <label class="form-check-label text-dark" for="bg-{{ loop.index0 }}">Set as Background</label>
+                                </div>
                             </div>
-                        {% endif %}
+                            {% endfor %}
+                        </div>
+                        <!-- Danh sách ảnh sẽ xóa (ẩn) -->
+                        <input type="hidden" name="images_to_remove" id="images_to_remove" value="">
                     </div>
                 </div>
-                <div class="form-row instructions">
-                    <div class="col-md-12"><label class="text-center text-white">Instructions</label></div>
-                    <div class="col-md-6 mb-3" id="ins1">
-                        {{ form.instruction1.label(class_="text-white") }}
+
+                <!-- Upload ảnh mới -->
+                <div class="form-row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-dark">Add New Images:</label>
+                        <input type="file" name="new_images" class="form-control" id="new_images" accept="image/*" multiple>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="form-row instructions" id="instructions-container">
+                    <div class="col-md-12"><label class="text-center text-dark">Instructions</label></div>
+                    <div class="col-md-6 mb-3" id="ins1" data-step="1">
+                        {{ form.instruction1.label(class_="text-dark") }}
                         {{ form.instruction1(class_="form-control instructionClass", placeholder="Please Enter The Instructions One At A Time", type="text", id="validationCustom03", autocomplete="off") }}
                         {% for message in form.instruction1.errors %}
                         <div class="invalid text-danger">{{ message }}</div>
                         {% endfor %}
                     </div>
                     {% for instruction in recipe.instructions[1:] %}
-                    <div class="col-md-6 mb-3" id="ins{{ loop.index + 1 }}">
-                        <label class="form-label text-white">Step {{ loop.index + 1 }}:</label>
+                    <div class="col-md-6 mb-3" id="ins{{ loop.index + 1 }}" data-step="{{ loop.index + 1 }}">
+                        <label class="form-label text-dark">Step {{ loop.index + 1 }}:</label>
                         <input name="instruction2" type="text" class="form-control instructionClass" placeholder="Please Enter The Instructions One At A Time" value="{{ instruction | safe }}" autocomplete="off">
                     </div>
                     {% endfor %}
                 </div>
+
                 <div class="form-row">
                     <div class="col-6"><button type="button" id="add-ins" name="add-more" class="btn btn-success" onclick="add_more_instructions()">+</button></div>
                     <div class="col-6"><button type="button" id="ins-remove" name="remove" class="btn btn-danger" onclick="remove_instructions()">-</button></div>
                 </div>
                 <br>
+
+                <!-- Allergens -->
                 <div class="form-row allergens">
-                    <div class="col-md-12"><label class="text-center text-white">Allergens</label></div>
+                    <div class="col-md-12"><label class="text-center text-dark">Allergens</label></div>
                     <div class="col-md-6 mb-3" id="allerg1">
-                        {{ form.allergen1.label(class_="text-white") }}
+                        {{ form.allergen1.label(class_="text-dark") }}
                         {{ form.allergen1(class_="form-control allergenClass", placeholder="Please Enter Any Allergens One At A Time", type="text", id="validationCustom04", autocomplete="off") }}
                         {% for message in form.allergen1.errors %}
                         <div class="invalid text-danger">{{ message }}</div>
@@ -79,20 +99,23 @@
                     </div>
                     {% for allergen in recipe.allergens[1:] %}
                     <div class="col-md-6 mb-3" id="allerg{{ loop.index + 1 }}">
-                        <label class="text-white">Allergen {{ loop.index + 1 }}:</label>
+                        <label class="text-dark">Allergen {{ loop.index + 2 }}:</label>
                         <input name="allergen2" type="text" class="form-control allergenClass" placeholder="Please Enter Any Allergens One At A Time" value="{{ allergen | safe }}" autocomplete="off">
                     </div>
                     {% endfor %}
                 </div>
+
                 <div class="form-row">
                     <div class="col-6"><button type="button" id="add-allerg" name="add-allerg" class="btn btn-success" onclick="add_more_allergens()">+</button></div>
                     <div class="col-6"><button type="button" id="allerg-remove" name="allerg-remove" class="btn btn-danger" onclick="remove_allergens()">-</button></div>
                 </div>
                 <br>
+
+                <!-- Ingredients -->
                 <div class="form-row ingredients">
-                    <div class="col-md-12"><label class="text-center text-white">Ingredients</label></div>
+                    <div class="col-md-12"><label class="text-center text-dark">Ingredients</label></div>
                     <div class="col-md-6 mb-3" id="ing1">
-                        {{ form.ingredient1.label(class_="text-white") }}
+                        {{ form.ingredient1.label(class_="text-dark") }}
                         {{ form.ingredient1(class_="form-control ingredientClass", placeholder="Please Enter The Ingredients One At A Time", type="text", id="validationCustom04", autocomplete="off") }}
                         {% for message in form.ingredient1.errors %}
                         <div class="invalid text-danger">{{ message }}</div>
@@ -100,35 +123,63 @@
                     </div>
                     {% for ingredient in recipe.ingredients[1:] %}
                     <div class="col-md-6 mb-3" id="ing{{ loop.index + 1 }}">
-                        <label class="text-white">Ingredient {{ loop.index + 1 }}:</label>
+                        <label class="text-dark">Ingredient {{ loop.index + 2 }}:</label>
                         <input name="ingredient2" type="text" class="form-control ingredientClass" placeholder="Please Enter The Ingredients One At A Time" value="{{ ingredient | safe }}" autocomplete="off">
                     </div>
                     {% endfor %}
                 </div>
+
                 <div class="form-row">
                     <div class="col-6"><button type="button" id="add-ing" name="add-ing" class="btn btn-success" onclick="add_more_ingredients()">+</button></div>
                     <div class="col-6"><button type="button" id="ing-remove" name="ing-remove" class="btn btn-danger" onclick="remove_ingredients()">-</button></div>
                 </div>
                 <br>
+                <!-- Thêm các trường mới: Serves, Prep Time, Cook Time -->
+                <div class="form-row">
+                    <div class="col-md-3 mb-3">
+                        {{ form.serves.label(class_="text-dark") }}
+                        {{ form.serves(class_="form-control", type="number", min="1", autocomplete="off") }}
+                        {% for message in form.serves.errors %}
+                        <div class="invalid text-danger">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        {{ form.prep_time.label(class_="text-dark") }}
+                        {{ form.prep_time(class_="form-control", type="number", min="0", autocomplete="off") }}
+                        {% for message in form.prep_time.errors %}
+                        <div class="invalid text-danger">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        {{ form.cook_time.label(class_="text-dark") }}
+                        {{ form.cook_time(class_="form-control", type="number", min="0", autocomplete="off") }}
+                        {% for message in form.cook_time.errors %}
+                        <div class="invalid text-danger">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <!-- Country and Author -->
                 <div class="form-row">
                     <div class="col-md-6 mb-3">
-                        {{ form.country.label(class_="text-white") }}
+                        {{ form.country.label(class_="text-dark") }}
                         {{ form.country(class_="form-control") }}
                         {% for message in form.country.errors %}
                         <div class="invalid text-danger">{{ message }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label for="readonlyAuthor" class="text-white">Author</label>
+                        <label for="readonlyAuthor" class="text-dark">Author</label>
                         <input type="text" class="form-control" id="readonlyAuthor" value="{{ username }}" readonly>
                     </div>
                 </div>
                 <br>
+
+                <!-- Public/Private Toggle -->
                 <div class="form-row">
                     <div class="col-md-12 mb-3">
                         <div class="form-check">
                             {{ form.is_public(class_="form-check-input", id="isPublic") }}
-                            {{ form.is_public.label(class_="form-check-label text-white", for="isPublic") }}
+                            {{ form.is_public.label(class_="form-check-label text-dark", for="isPublic") }}
                         </div>
                         {% for message in form.is_public.errors %}
                         <div class="invalid text-danger">{{ message }}</div>
@@ -136,6 +187,8 @@
                     </div>
                 </div>
                 <br>
+
+                <!-- Action buttons -->
                 <div class="form-row">
                     <div class="col-6"><button class="btn btn-success" type="submit" name="action">Save Changes</button></div>
                     <div class="col-6"><a class="btn btn-danger" href="{{ url_for('my_recipes', username=username) }}" name="action">Cancel</a></div>
@@ -153,5 +206,39 @@
         $("select option[value='{{ recipe.country.title() | safe }}']").attr('selected', 'selected');
     }
     make_selected();
+
+    // Khởi tạo imagesToRemove và đảm bảo input luôn chứa JSON hợp lệ
+    let imagesToRemove = [];
+    document.getElementById('images_to_remove').value = JSON.stringify(imagesToRemove);
+
+    function removeImage(imagePath) {
+        // Thêm ảnh vào danh sách xóa
+        imagesToRemove.push(imagePath);
+        document.getElementById('images_to_remove').value = JSON.stringify(imagesToRemove);
+
+        // Ẩn ảnh trên giao diện
+        const imageContainer = document.querySelector(`img[src="${imagePath}"]`).parentElement;
+        imageContainer.style.display = 'none';
+
+        // Kiểm tra nếu ảnh bị xóa là background_image
+        const currentBackground = "{{ recipe.background_image }}";
+        if (imagePath === currentBackground) {
+            // Bỏ chọn radio button
+            const radio = document.querySelector(`input[name="background_image"][value="${imagePath}"]`);
+            if (radio) radio.checked = false;
+        }
+    }
 </script>
+
+<style>
+    .image-container {
+        position: relative;
+    }
+    .image-container img {
+        transition: opacity 0.3s ease;
+    }
+    .image-container:hover img {
+        opacity: 0.8;
+    }
+</style>
 {% endblock %}

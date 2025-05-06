@@ -4,13 +4,9 @@
 <div class="container-full-bg">
     <div class="jumbotron">
         <div class="container my-5 px-0">
-            <div class="row recipe-page">
-                <div class="col-lg-12">
-                    <h1 style="color: #000000; font-family: 'SchroedersDiet', Georgia, serif; text-transform: uppercase; font-weight: bold;">
-                        WELCOME
-                    </h1>                              
-                </div>
-            </div>
+            <h2 class="text-dark mb-4" style="font-family: 'SchroedersDiet', Georgia, serif; text-transform: uppercase; font-weight: bold;">
+                Welcome
+            </h2>
 
             <!-- Dropdown để chọn kiểu sắp xếp và ô nhập liệu để lọc quốc gia -->
             <div class="d-flex justify-content-between mb-4">
@@ -41,145 +37,49 @@
 
             <!-- Danh sách công thức dạng card -->
             <div class="card-container">
-                <!-- Mặc định -->
-                <div id="sortDefault">
-                    {% for recipe in default %}
-                    <a href="{{ url_for('view_recipe', recipe_id=recipe.recipeID, username=recipe.author) }}" style="text-decoration: none; display: block;">
-                        <div class="recipe-card mb-3" data-country="{{ recipe.country|lower }}">
-                            <img src="{{ recipe.images[0] if recipe.images and recipe.images|length > 0 else url_for('static', filename='images/default.jpg') }}" alt="{{ recipe.name.title() }}" style="width: 100%; height: auto; border-radius: 10px 10px 0 0;">
-                            <div class="p-3">
-                                <h5 class="mb-1">{{ recipe.name.title() }}</h5>
-                                <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
-                                <div class="d-flex align-items-center gap-3 mt-2">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-thumbs-up me-1" style="color: #28a745;"></i>
-                                        <span>{{ recipe.upvotes if recipe.upvotes else 0 }} lượt thích</span>
+                {% for recipe in default %}
+                <a href="{{ url_for('view_recipe', recipe_id=recipe.recipeID, username=recipe.author) }}" 
+                   class="recipe-link default" 
+                   data-country="{{ recipe.country|lower }}" 
+                   data-name="{{ recipe.name|lower }}" 
+                   data-author="{{ recipe.author|lower }}" 
+                   data-upvotes="{{ recipe.upvotes|default(0) }}" 
+                   data-downvotes="{{ recipe.downvotes|default(0) }}" 
+                   style="text-decoration: none; color: inherit;">
+                    <div class="recipe-card" 
+                         style="background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('{{ url_for('static', filename=recipe.background_image) if recipe.background_image else url_for('static', filename='images/dishDF.jpg') }}');">
+                        <div class="card-content">
+                            <div class="row">
+                                <div class="col-8">
+                                    <h5 class="title" style="font-family: 'Times New Roman', Times, serif; margin: 5px 0;">{{ recipe.name.title() }}</h5>
+                                    <p class="author" style="font-size: 0.9rem; opacity: 0.8; margin: 0;">Quốc gia: {{ recipe.country.title() }}</p>
+                                </div>
+                                <div class="col-4 text-right">
+                                    <div class="d-flex align-items-center justify-content-end gap-3 mt-2">
+                                        <!-- Upvotes -->
+                                        <div class="d-flex align-items-center" style="background: rgba(0,0,0,0.5); padding: 2px 5px; border-radius: 10px;">
+                                            <i class="fa fa-thumbs-up me-1" style="color: #28a745;"></i>
+                                            <span style="font-size: 0.8rem;">{{ recipe.upvotes if recipe.upvotes else 0 }}</span>
+                                        </div>
+                                        <!-- Downvotes -->
+                                        <div class="d-flex align-items-center" style="background: rgba(0,0,0,0.5); padding: 2px 5px; border-radius: 10px;">
+                                            <i class="fa fa-thumbs-down me-1" style="color: #dc3545;"></i>
+                                            <span style="font-size: 0.8rem;">{{ recipe.downvotes if recipe.downvotes else 0 }}</span>
+                                        </div>
                                     </div>
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-thumbs-down me-1" style="color: #dc3545;"></i>
-                                        <span>{{ recipe.downvotes if recipe.downvotes else 0 }} không thích</span>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <img src="{{ recipe.avatar_url }}" class="avatar" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
+                                    <!-- Avatar -->
+                                    <div class="d-flex align-items-center justify-content-end mt-2">
+                                        <img src="{{ url_for('static', filename='images/' + recipe.author + '_avt.jpg') }}"
+                                             onerror="this.src='{{ url_for('static', filename='images/default.jpg') }}'"
+                                             class="avatar"
+                                             style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid white;">
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </a>
-                    {% endfor %}
-                </div>
-
-                <!-- Sắp xếp theo Author -->
-                <div id="sortAuthor" style="display: none;">
-                    {% for recipe in author %}
-                    <a href="{{ url_for('view_recipe', recipe_id=recipe.recipeID, username=recipe.author) }}" style="text-decoration: none; display: block;">
-                        <div class="recipe-card mb-3" data-country="{{ recipe.country|lower }}">
-                            <img src="{{ recipe.images[0] if recipe.images and recipe.images|length > 0 else url_for('static', filename='images/default.jpg') }}" alt="{{ recipe.name.title() }}" style="width: 100%; height: auto; border-radius: 10px 10px 0 0;">
-                            <div class="p-3">
-                                <h5 class="mb-1">{{ recipe.name.title() }}</h5>
-                                <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
-                                <div class="d-flex align-items-center gap-3 mt-2">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-thumbs-up me-1" style="color: #28a745;"></i>
-                                        <span>{{ recipe.upvotes if recipe.upvotes else 0 }} lượt thích</span>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-thumbs-down me-1" style="color: #dc3545;"></i>
-                                        <span>{{ recipe.downvotes if recipe.downvotes else 0 }} không thích</span>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <img src="{{ recipe.avatar_url }}" class="avatar" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
-
-                <!-- Sắp xếp theo Name -->
-                <div id="sortName" style="display: none;">
-                    {% for recipe in name %}
-                    <a href="{{ url_for('view_recipe', recipe_id=recipe.recipeID, username=recipe.author) }}" style="text-decoration: none; display: block;">
-                        <div class="recipe-card mb-3" data-country="{{ recipe.country|lower }}">
-                            <img src="{{ recipe.images[0] if recipe.images and recipe.images|length > 0 else url_for('static', filename='images/default.jpg') }}" alt="{{ recipe.name.title() }}" style="width: 100%; height: auto; border-radius: 10px 10px 0 0;">
-                            <div class="p-3">
-                                <h5 class="mb-1">{{ recipe.name.title() }}</h5>
-                                <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
-                                <div class="d-flex align-items-center gap-3 mt-2">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-thumbs-up me-1" style="color: #28a745;"></i>
-                                        <span>{{ recipe.upvotes if recipe.upvotes else 0 }} lượt thích</span>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-thumbs-down me-1" style="color: #dc3545;"></i>
-                                        <span>{{ recipe.downvotes if recipe.downvotes else 0 }} không thích</span>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <img src="{{ recipe.avatar_url }}" class="avatar" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
-
-                <!-- Sắp xếp theo Upvotes -->
-                <div id="sortUpvotes" style="display: none;">
-                    {% for recipe in upvotes %}
-                    <a href="{{ url_for('view_recipe', recipe_id=recipe.recipeID, username=recipe.author) }}" style="text-decoration: none; display: block;">
-                        <div class="recipe-card mb-3" data-country="{{ recipe.country|lower }}">
-                            <img src="{{ recipe.images[0] if recipe.images and recipe.images|length > 0 else url_for('static', filename='images/default.jpg') }}" alt="{{ recipe.name.title() }}" style="width: 100%; height: auto; border-radius: 10px 10px 0 0;">
-                            <div class="p-3">
-                                <h5 class="mb-1">{{ recipe.name.title() }}</h5>
-                                <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
-                                <div class="d-flex align-items-center gap-3 mt-2">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-thumbs-up me-1" style="color: #28a745;"></i>
-                                        <span>{{ recipe.upvotes if recipe.upvotes else 0 }} lượt thích</span>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-thumbs-down me-1" style="color: #dc3545;"></i>
-                                        <span>{{ recipe.downvotes if recipe.downvotes else 0 }} không thích</span>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <img src="{{ recipe.avatar_url }}" class="avatar" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
-
-                <!-- Sắp xếp theo Downvotes -->
-                <div id="sortDownvotes" style="display: none;">
-                    {% for recipe in downvotes %}
-                    <a href="{{ url_for('view_recipe', recipe_id=recipe.recipeID, username=recipe.author) }}" style="text-decoration: none; display: block;">
-                        <div class="recipe-card mb-3" data-country="{{ recipe.country|lower }}">
-                            <img src="{{ recipe.images[0] if recipe.images and recipe.images|length > 0 else url_for('static', filename='images/default.jpg') }}" alt="{{ recipe.name.title() }}" style="width: 100%; height: auto; border-radius: 10px 10px 0 0;">
-                            <div class="p-3">
-                                <h5 class="mb-1">{{ recipe.name.title() }}</h5>
-                                <p class="mb-0" style="font-size: 0.9rem; opacity: 0.8;">Quốc gia: {{ recipe.country.title() }}</p>
-                                <div class="d-flex align-items-center gap-3 mt-2">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-thumbs-up me-1" style="color: #28a745;"></i>
-                                        <span>{{ recipe.upvotes if recipe.upvotes else 0 }} lượt thích</span>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-thumbs-down me-1" style="color: #dc3545;"></i>
-                                        <span>{{ recipe.downvotes if recipe.downvotes else 0 }} không thích</span>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <img src="{{ recipe.avatar_url }}" class="avatar" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
+                    </div>
+                </a>
+                {% endfor %}
             </div>
 
             <!-- Phân trang -->
@@ -202,23 +102,17 @@
 <script src="/static/js/sort_table.js"></script>
 <script>
     function filter_by_country(country) {
-        // Chuẩn hóa giá trị nhập vào
         if (country === 'tất cả') {
             country = 'all';
         }
         
-        // Lấy tất cả các recipe-card trong div đang hiển thị
-        const activeSortDiv = document.querySelector('.card-container > div:not([style*="display: none"])');
-        const items = activeSortDiv.querySelectorAll('.recipe-card');
-
+        const items = document.querySelectorAll('.recipe-link');
         items.forEach(item => {
             const itemCountry = item.getAttribute('data-country');
-            const parent = item.parentElement; // Thẻ <a> bao quanh recipe-card
-
             if (country === 'all' || itemCountry === country) {
-                parent.style.display = 'block'; // Hiển thị
+                item.style.display = 'block';
             } else {
-                parent.style.display = 'none'; // Ẩn
+                item.style.display = 'none';
             }
         });
     }
