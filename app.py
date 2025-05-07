@@ -1,7 +1,7 @@
 import os
 import json
 from os import environ
-from flask import Flask, render_template, redirect, request, url_for, jsonify, flash
+from flask import Flask, render_template, redirect, request, url_for, jsonify, flash, Response
 from flask_pymongo import PyMongo, pymongo
 from dotenv import load_dotenv, find_dotenv
 from bson.objectid import ObjectId
@@ -139,18 +139,89 @@ def user_index(username):
     
 #     return render_template("index.html", form=wtform, errors=wtform.errors)
     
-@app.route('/books', methods=['GET'])
-def books():
+@app.route('/<username>/books', methods=['GET'])
+def books(username):
+    if 'username' not in session or session['username'] != username:
+        flash("Please log in first.")
+        return redirect(url_for('login'))
     books_collection = mongo.db.books
     books_list = list(books_collection.find())  
-    return render_template('book_list.html', books=books_list)  
-@app.route('/books/<book_id>')
-def view_book(book_id):
-    book = mongo.db.books.find_one({ '_id': ObjectId(book_id) })
-    if not book:
-        return "Book not found", 404
-    return render_template('book.html', book=book) 
+    return render_template('book_list.html', books=books_list, username=username)   
 
+@app.route('/view_book/<username>/<book_id>', methods=['GET'])
+def view_book(username, book_id):
+    book = mongo.db.books.find_one({"_id": ObjectId(book_id)})
+    if not book:
+        flash("Sách không tồn tại.", "danger")
+        return redirect(url_for('books', username=username))
+
+    # Lấy trang hiện tại từ query string (mặc định là trang 1)
+    current_page = int(request.args.get('page', 1))  # Lấy giá trị page từ query string
+    total_pages = len(book['pages'])  # Số trang tổng cộng
+
+    # Kiểm tra nếu current_page không vượt quá tổng số trang
+    if current_page > total_pages:
+        current_page = total_pages
+    elif current_page < 1:
+        current_page = 1
+
+    return render_template('book.html', username=username, book=book, current_page=current_page, total_pages=total_pages)
+
+@app.route('/save_book/<username>/<book_id>', methods=['POST'])
+def save_book(username, book_id):
+    if 'username' not in session or session['username'] != username:
+        flash("Vui lòng đăng nhập", "danger")
+        return redirect(url_for('login')) 
+
+    # Kiểm tra nếu sách tồn tại trong database
+    book = mongo.db.books.find_one({"_id": ObjectId(book_id)})
+    if book:
+        if username not in book.get("username", []):
+            mongo.db.books.update_one(
+                {"_id": ObjectId(book_id)},
+                {"$push": {"username": username}}  
+            )
+            flash("Sách đã được lưu vào My Book", "success")
+        else:
+            flash("Sách đã được lưu rồi.", "info")
+    else:
+        flash("Không tìm thấy sách.", "danger")
+
+    return redirect(url_for('my_books', username=username))  
+@app.route('/<username>/unsave_book/<book_id>', methods=['POST'])
+def unsave_book(username, book_id):
+    try:
+        book_id_obj = ObjectId(book_id)
+        # Kiểm tra xem người dùng có tồn tại và có sách đã lưu không
+        user = mongo.db.users.find_one({'username': username})
+        if not user or 'saved_books' not in user or book_id_obj not in user['saved_books']:
+            return jsonify({'success': False, 'message': 'Sách không tồn tại trong danh sách đã lưu.'}), 400
+
+        # Xóa sách khỏi danh sách đã lưu
+        result = mongo.db.users.update_one(
+            {'username': username},
+            {'$pull': {'saved_books': book_id_obj}}
+        )
+
+        if result.modified_count > 0:
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Không thể xóa sách.'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 400
+@app.route('/my_books/<username>')
+def my_books(username):
+    if 'username' not in session or session['username'] != username:
+        flash("Vui lòng đăng nhập trước khi xem My Books", "danger")
+        return redirect(url_for('login'))
+
+    # Lọc sách theo username
+    books_cursor = mongo.db.books.find({"username": username})
+    books = list(books_cursor)  # Chuyển đổi Cursor thành danh sách
+
+    # Tính số lượng sách
+    book_count = len(books)
+
+    return render_template('my_book.html', books=books, book_count=book_count, username=username)
 @app.route('/<username>/recipes')
 def recipes(username):
     if 'username' not in session or session['username'] != username:
@@ -611,20 +682,18 @@ def view_recipe(username, recipe_id):
     the_recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id)})
     
     if not the_recipe or (the_recipe.get('is_public', False) == False and session.get('username') != username):
-        flash('Recipe not found or not accessible.', 'error')
-        return redirect(url_for('recipes', username=session.get('username', 'guest'), limit=10, offset=0))
+        return jsonify({'success': False, 'message': 'Recipe not found or not accessible.'})
 
-    # Tạo danh sách URL ảnh cho carousel (bao gồm cả background_image)
+    # Tạo danh sách URL ảnh cho carousel
     image_urls = []
     if the_recipe.get('images'):
         for img in the_recipe['images']:
             image_urls.append(url_for('static', filename=img))
-    # Thêm background_image nếu có và chưa trong danh sách
     background_image = the_recipe.get('background_image')
     if background_image and url_for('static', filename=background_image) not in image_urls:
         image_urls.insert(0, url_for('static', filename=background_image))
 
-    # Get Voting Details of Selected Recipe
+    # Get Voting Details
     the_recipe_vote = mongo.db.recipes.find_one({"recipeID": int(recipe_id)}, {'upvotes': 1, 'downvotes': 1})
     current = []
     current.append(the_recipe_vote)
@@ -638,22 +707,25 @@ def view_recipe(username, recipe_id):
         "recipe_id": int(recipe_id)
     })
 
-    # If a Button is Pressed (Vote or Comment)
+    # Thêm avatar_url vào comments
+    for comment in the_recipe.get('comments', []):
+        user = mongo.db.users.find_one({"username": comment['username']})
+        avatar_filename = f"{comment['username']}_avt.jpg"
+        comment['avatar_url'] = url_for('static', filename=f'images/{avatar_filename}') if user else url_for('static', filename='images/default.jpg')
+
+    # If a Button is Pressed
     if request.method == "POST":
+        print(f"Received POST request: {request.form}")  # Debug log
         if 'vote' in request.form:
             current_user = session.get('username', 'anonymous')
             if user_vote:
-                flash('You have already voted on this recipe.', 'error')
-                return redirect(url_for('view_recipe', username=current_user, recipe_id=recipe_id))
+                return jsonify({'success': False, 'message': 'You have already voted on this recipe.'})
             elif current_user == the_recipe['author']:
-                flash('You cannot vote on your own recipe.', 'error')
-                return redirect(url_for('view_recipe', username=current_user, recipe_id=recipe_id))
+                return jsonify({'success': False, 'message': 'You cannot vote on your own recipe.'})
 
-            # If Upvote
             if request.form['vote'] == "upvote":
                 upvote = current[0]['upvotes'] + 1
                 recipes.update_one({'recipeID': int(recipe_id)}, {'$set': {'upvotes': upvote}})
-                # Lưu lịch sử bỏ phiếu
                 mongo.db.votes.insert_one({
                     "username": current_user,
                     "recipe_id": int(recipe_id),
@@ -661,7 +733,6 @@ def view_recipe(username, recipe_id):
                     "timestamp": datetime.utcnow().isoformat() + 'Z'
                 })
                 flash('Đã tăng lượt thích!', 'success')
-                # Tạo thông báo (không gửi cho chính tác giả)
                 if current_user != the_recipe['author']:
                     create_notification(
                         the_recipe['author'],
@@ -671,11 +742,9 @@ def view_recipe(username, recipe_id):
                         f"{current_user} upvoted your recipe '{the_recipe['name']}'"
                     )
             
-            # If Downvote
             elif request.form['vote'] == "downvote":
                 downvote = current[0]['downvotes'] + 1
                 recipes.update_one({'recipeID': int(recipe_id)}, {'$set': {'downvotes': downvote}})
-                # Lưu lịch sử bỏ phiếu
                 mongo.db.votes.insert_one({
                     "username": current_user,
                     "recipe_id": int(recipe_id),
@@ -683,7 +752,6 @@ def view_recipe(username, recipe_id):
                     "timestamp": datetime.utcnow().isoformat() + 'Z'
                 })
                 flash('Đã tăng lượt không thích!', 'success')
-                # Tạo thông báo (không gửi cho chính tác giả)
                 if current_user != the_recipe['author']:
                     create_notification(
                         the_recipe['author'],
@@ -693,16 +761,15 @@ def view_recipe(username, recipe_id):
                         f"{current_user} downvoted your recipe '{the_recipe['name']}'"
                     )
             
-            # Chuyển hướng về recipes với username từ session
-            return redirect(url_for('recipes', username=current_user, limit=10, offset=0))
+            return jsonify({'success': True})
         
         elif comment_form.validate_on_submit() and 'comment' in request.form:
             if 'username' not in session:
-                flash('Please log in to comment.', 'error')
-                return redirect(url_for('login'))
+                return jsonify({'success': False, 'message': 'Please log in to comment.'})
             if the_recipe.get('is_public', False):
                 comment_text = request.form['comment']
                 new_comment = {
+                    '_id': str(ObjectId()),
                     'username': session['username'],
                     'comment_text': comment_text,
                     'timestamp': datetime.utcnow().isoformat() + 'Z'
@@ -712,7 +779,6 @@ def view_recipe(username, recipe_id):
                     {'$push': {'comments': new_comment}}
                 )
                 flash('Comment added successfully!', 'success')
-                # Tạo thông báo (không gửi cho chính tác giả)
                 if session['username'] != the_recipe['author']:
                     create_notification(
                         the_recipe['author'],
@@ -722,9 +788,46 @@ def view_recipe(username, recipe_id):
                         f"{session['username']} commented on your recipe '{the_recipe['name']}'"
                     )
             else:
-                flash('Only public recipes can be commented on.', 'error')
-            # Chuyển hướng về recipes với username từ session
-            return redirect(url_for('recipes', username=session['username'], limit=10, offset=0))
+                return jsonify({'success': False, 'message': 'Only public recipes can be commented on.'})
+            return jsonify({'success': True})
+        
+        # Xử lý chỉnh sửa comment
+        for comment in the_recipe.get('comments', []):
+            edit_field = f'edit_comment_{comment["_id"]}'
+            if edit_field in request.form:
+                print(f"Processing edit for comment {comment['_id']}")  # Debug log
+                if 'username' not in session:
+                    return jsonify({'success': False, 'message': 'Please log in to edit comment.'})
+                if comment['username'] != session['username']:
+                    return jsonify({'success': False, 'message': 'You can only edit your own comments.'})
+                new_comment_text = request.form[edit_field].strip()
+                if new_comment_text:
+                    result = recipes.update_one(
+                        {'recipeID': int(recipe_id), 'comments._id': comment['_id']},
+                        {'$set': {'comments.$.comment_text': new_comment_text}}
+                    )
+                    print(f"Update result: {result.modified_count} document(s) modified")  # Debug log
+                    return jsonify({'success': True})
+                else:
+                    return jsonify({'success': False, 'message': 'Comment cannot be empty.'})
+        
+        # Xử lý xóa comment
+        for comment in the_recipe.get('comments', []):
+            delete_field = f'delete_comment_{comment["_id"]}'
+            if delete_field in request.form and request.form[delete_field] == '1':
+                print(f"Processing delete for comment {comment['_id']}")  # Debug log
+                if 'username' not in session:
+                    return jsonify({'success': False, 'message': 'Please log in to delete comment.'})
+                if comment['username'] != session['username']:
+                    return jsonify({'success': False, 'message': 'You can only delete your own comments.'})
+                result = recipes.update_one(
+                    {'recipeID': int(recipe_id)},
+                    {'$pull': {'comments': {'_id': comment['_id']}}}
+                )
+                print(f"Delete result: {result.modified_count} document(s) modified")  # Debug log
+                return jsonify({'success': True})
+        
+        return jsonify({'success': False, 'message': 'Invalid request.'})  # Thêm phản hồi mặc định
     
     # Lấy số lượng thông báo chưa đọc
     unread_notifications = mongo.db.notifications.count_documents({
@@ -732,7 +835,6 @@ def view_recipe(username, recipe_id):
         "read": False
     })
     return render_template('view_recipe.html', recipe=the_recipe, username=username, comment_form=comment_form, unread_notifications=unread_notifications, image_urls=image_urls)
-# Route để lấy danh sách thông báo (tùy chọn)
 @app.route('/<username>/notifications')
 def notifications(username):
     if 'username' not in session or session['username'] != username:
@@ -843,6 +945,59 @@ def change_password():
     
     flash('Mật khẩu đã được cập nhật thành công.')
     return redirect(url_for('settings'))
+@app.route('/<username>/recipe/<recipe_id>/comment/<comment_id>/edit', methods=['GET', 'POST'])
+def edit_comment(username, recipe_id, comment_id):
+    if 'username' not in session or session['username'] != username:
+        flash('You are not authorized to edit this comment.', 'error')
+        return redirect(url_for('view_recipe', username=username, recipe_id=recipe_id))
+
+    recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id)})
+    if not recipe or int(comment_id) >= len(recipe.get('comments', [])):
+        flash('Comment not found.', 'error')
+        return redirect(url_for('view_recipe', username=username, recipe_id=recipe_id))
+
+    comment = recipe['comments'][int(comment_id)]
+    if comment['username'] != username:
+        flash('You can only edit your own comments.', 'error')
+        return redirect(url_for('view_recipe', username=username, recipe_id=recipe_id))
+
+    if request.method == 'POST':
+        new_comment_text = request.form.get('comment')
+        if new_comment_text:
+            mongo.db.recipes.update_one(
+                {"recipeID": int(recipe_id)},
+                {"$set": {f"comments.{comment_id}.comment_text": new_comment_text}}
+            )
+            flash('Comment updated successfully!', 'success')
+        else:
+            flash('Comment cannot be empty.', 'error')
+        return redirect(url_for('view_recipe', username=username, recipe_id=recipe_id))
+
+    return render_template('edit_comment.html', comment=comment, username=username, recipe_id=recipe_id, comment_id=comment_id)
+@app.route('/<username>/recipe/<recipe_id>/comment/<comment_id>/delete', methods=['POST'])
+def delete_comment(username, recipe_id, comment_id):
+    if 'username' not in session or session['username'] != username:
+        flash('You are not authorized to delete this comment.', 'error')
+        return redirect(url_for('view_recipe', username=username, recipe_id=recipe_id))
+
+    recipe = mongo.db.recipes.find_one({"recipeID": int(recipe_id)})
+    if not recipe or int(comment_id) >= len(recipe.get('comments', [])):
+        flash('Comment not found.', 'error')
+        return redirect(url_for('view_recipe', username=username, recipe_id=recipe_id))
+
+    comment = recipe['comments'][int(comment_id)]
+    if comment['username'] != username:
+        flash('You can only delete your own comments.', 'error')
+        return redirect(url_for('view_recipe', username=username, recipe_id=recipe_id))
+
+    mongo.db.recipes.update_one(
+        {"recipeID": int(recipe_id)},
+        {"$pull": {"comments": {"username": comment['username'], "comment_text": comment['comment_text'], "timestamp": comment['timestamp']}}}
+    )
+    flash('Comment deleted successfully!', 'success')
+    return redirect(url_for('view_recipe', username=username, recipe_id=recipe_id))
+
+
 # Hàm kiểm tra file hợp lệ
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}

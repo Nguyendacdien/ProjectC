@@ -1,15 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
-    <title>Đọc sách: {{ book.title }}</title>
+    <title>Đọc sách</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #f9f9f9;
+            background: white;
             padding: 20px;
-            color: #333;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .reader-wrapper {
+            position: relative;
+            width: calc(100vw - 150px); /* Mỗi bên 75px */
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .slider {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .page {
+            flex: 0 0 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 75px;
+            box-sizing: border-box;
+        }
+
+        .page img {
+            max-width: 100%; /* Giới hạn chiều rộng tối đa */
+            max-height: 500px; /* Giảm chiều dọc cho hình ngang */
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            object-fit: contain; /* Giữ nguyên tỷ lệ hình ảnh */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            height: auto; /* Tự động điều chỉnh chiều cao */
+        }
+
+        /* Điều chỉnh hình dọc */
+        .page img[style*="height"] {
+            max-height: none; /* Cho phép hình dọc hiển thị đầy đủ chiều cao */
+            width: auto; /* Tự động điều chỉnh chiều rộng */
+        }
+
+        .pagination {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            padding: 0 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+
+        .pagination button {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background-color: transparent;
+            color: black;
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .pagination button:hover {
+            transform: scale(1.2);
+        }
+
+        .pagination button:disabled {
+            color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .dots {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ccc;
+        }
+
+        .dot.active {
+            background-color: #333;
         }
 
         a.back {
@@ -17,44 +109,98 @@
             margin-bottom: 20px;
             text-decoration: none;
             color: #555;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .page {
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .page img {
-            max-width: 100%;
-            height: auto;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .page-number {
-            margin-top: 5px;
-            color: #666;
+            font-size: 1.1rem;
         }
     </style>
 </head>
-
 <body>
-    <a href="{{ url_for('books') }}" class="back">← Quay về danh sách sách</a>
-    <h1>{{ book.title }}</h1>
+    <a href="{{ url_for('books', username=username) }}" class="back">← Quay về danh sách sách</a>
 
-    {% for p in book.pages %}
-    <div class="page">
-        <img src="..{{ p.image_url }}" alt="Page {{ p.page_number }}"
-            onerror="this.src='/static/images/default_cover.jpg'">
-        <div class="page-number">Trang {{ p.page_number }}</div>
-    </div>
-    {% endfor %}
+    {% if book.pages %}
+        <div class="reader-wrapper">
+            <div class="pagination" id="pagination">
+                <button id="prevBtn" {% if current_page == 1 %} disabled {% endif %}>
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button id="nextBtn" {% if current_page == total_pages %} disabled {% endif %}>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- Slide ảnh -->
+            <div class="slider" id="slider">
+                {% for page in book.pages %}
+                <div class="page">
+                    <img src="{{ page.image_url }}" alt="Trang {{ page.page_number }}">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Dots -->
+        <div class="dots" id="dotContainer">
+            {% for _ in book.pages %}
+            <div class="dot {% if loop.index == current_page %}active{% endif %}"></div>
+            {% endfor %}
+        </div>
+
+        <script>
+            const slider = document.getElementById('slider');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const dots = document.querySelectorAll('.dot');
+            const totalPages = {{ book.pages|length }}; // Tổng số trang
+            let currentIndex = {{ current_page - 1 }}; // Trang hiện tại (bắt đầu từ 0)
+
+            // Cập nhật slider và dots
+            function updateSlider() {
+                // Di chuyển slider tới trang hiện tại
+                slider.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+                // Cập nhật các chấm (dots) để hiển thị trang hiện tại
+                dots.forEach((dot, index) => {
+                    dot.classList.toggle('active', index === currentIndex);
+                });
+
+                // Vô hiệu hóa các nút nếu đã tới trang đầu hoặc trang cuối
+                prevBtn.disabled = currentIndex === 0;
+                nextBtn.disabled = currentIndex === totalPages - 1;
+
+                // Cập nhật URL mà không tải lại trang
+                const newUrl = `{{ url_for('view_book', username=username, book_id=book._id) }}?page=${currentIndex + 1}`;
+                window.history.pushState({ page: currentIndex + 1 }, '', newUrl);
+            }
+
+            // Chuyển trang khi nhấn nút Previous
+            prevBtn.addEventListener('click', () => {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    updateSlider();
+                }
+            });
+
+            // Chuyển trang khi nhấn nút Next
+            nextBtn.addEventListener('click', () => {
+                if (currentIndex < totalPages - 1) {
+                    currentIndex++;
+                    updateSlider();
+                }
+            });
+
+            // Xử lý khi người dùng nhấn nút Back/Forward trên trình duyệt
+            window.addEventListener('popstate', (event) => {
+                if (event.state && event.state.page) {
+                    currentIndex = event.state.page - 1;
+                    updateSlider();
+                }
+            });
+
+            // Khởi tạo slider
+            updateSlider();
+        </script>
+    {% else %}
+        <p>Không có trang nào.</p>
+    {% endif %}
 </body>
-
 </html>
+{% endblock %}

@@ -1,99 +1,100 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book List</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f9f9f9;
-            padding: 20px;
-            color: #333;
+{% block content %}
+<div class="container-full-bg">
+    <div class="jumbotron">
+        <div class="container my-5 px-0">
+            <h2 class="text-dark mb-4" style="font-family: 'SchroedersDiet', Georgia, serif; text-transform: uppercase; font-weight: bold;">
+                DANH SÁCH SÁCH
+            </h2>
+
+            <div class="card-container">
+                {% for book in books %}
+                <a href="{{ url_for('view_book', username=username, book_id=book._id) }}"
+                   class="recipe-link"
+                   style="text-decoration: none; color: inherit;">
+                    <div class="recipe-card"
+                         style="background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('{{ book.cover_image }}');">
+                        <div class="card-content">
+                            <div class="row">
+                                <div class="col-8">
+                                    <h5 class="title" style="font-family: 'Times New Roman', Times, serif; margin: 5px 0;">{{ book.title }}</h5>
+                                    <p class="author" style="font-size: 0.9rem; opacity: 0.8; margin: 0;">Tác giả: {{ book.author }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="position: absolute; bottom: 15px; right: 15px;">
+                            <form action="{{ url_for('save_book', username=username, book_id=book._id) }}" method="POST">
+                                <button type="submit" 
+                                        style="margin-top: 10px; padding: 6px 10px; font-size: 0.8rem; background: rgba(40,167,69,0.9); border: none; color: white; border-radius: 5px;">
+                                    Lưu sách
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0;
+    }
+
+    .recipe-card {
+        background-color: #2E3856;
+        color: #ffffff;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.3s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        height: 200px;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+    }
+
+    .recipe-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-content {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 15px;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    }
+
+    .title {
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+
+    .author {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+        margin-bottom: 0;
+        text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+    }
+
+    @media (max-width: 768px) {
+        .card-container {
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
         }
-
-        h1 {
-            text-align: center;
-            color: #444;
-        }
-
-        ul {
-            list-style: none;
-            padding: 0;
-            max-width: 900px;
-            margin: auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-
-        li {
-            background: #fff;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s ease;
-        }
-
-        li:hover {
-            transform: translateY(-5px);
-        }
-
-        img {
-            width: 100%;
-            height: auto;
-            max-height: 250px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-bottom: 10px;
-        }
-
-        .title {
-            font-weight: bold;
-            font-size: 18px;
-            margin: 5px 0;
-        }
-
-        .author {
-            color: #666;
-            font-size: 14px;
-        }
-
-        p {
-            text-align: center;
-            color: #999;
-        }
-
-        a.back {
-            display: inline-block;
-            margin-bottom: 20px;
-            text-decoration: none;
-            color: #555;
-        }
-    </style>
-</head>
-
-<body>
-    <h1>List of Books</h1>
-    <a href="{{ url_for('login') }}" class="back">← Quay về trang đăng nhập</a>
-    {% if books %}
-    <ul>
-        {% for book in books %}
-        <a href="{{ url_for('view_book', book_id=book._id) }}" style="text-decoration: none; color: inherit;">
-            <li>
-                <img src="{{ book.cover_image }}" alt="Cover Image"
-                onerror="this.src='/static/images/default_cover.jpg'">           
-                <div class="title">{{ book.title }}</div>
-                <div class="author">{{ book.author }}</div>
-            </li>
-        </a>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>No books found.</p>
-    {% endif %}
-</body>
-
-</html>
+    }
+</style>
+{% endblock %}

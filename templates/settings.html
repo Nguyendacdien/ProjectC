@@ -1,108 +1,131 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container my-5">
-    <h2 class="text-white my-4">Cài đặt</h2>
-    <div class="card p-4" style="background-color: #2E3856; color: #ffffff;">
-        <h4>Thông tin cá nhân</h4>
-        <hr style="border-color: #ffffff;">
-        
-        <!-- Profile Picture Upload -->
-        <div class="mb-4">
-            <h5>Ảnh hồ sơ</h5>
-            {% if session.username %}
-                <!-- Display current profile picture if available -->
-                <img src="{{ url_for('static', filename='images/' + session.username + '_avt.jpg') }}" 
-                alt="Profile Picture" 
-                class="rounded-circle mb-3" 
-                style="width: 100px; height: 100px; object-fit: cover;" 
-                id="profile-picture">
-            {% else %}
-                <img src="{{ url_for('static', filename='default.jpg') }}" 
-                     alt="Default Profile Picture" 
-                     class="rounded-circle mb-3" 
-                     style="width: 100px; height: 100px; object-fit: cover;">
-            {% endif %}
-            <form method="POST" action="{{ url_for('upload_profile_picture') }}" enctype="multipart/form-data">
-                <div class="mb-3">
-                    <input type="file" class="form-control" name="profile_picture" accept="image/*" required>
+<div class="container my-5" style="padding-top: 30px;">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <div class="col-md-3 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">TÀI KHOẢN</h4>
+                    <ul class="nav flex-column nav-pills" id="account-tab" role="tablist">
+                        <li class="nav-item mb-2">
+                            <a class="nav-link active" data-bs-toggle="pill" href="#info" role="tab">Thông tin tài khoản</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link" data-bs-toggle="pill" href="#password" role="tab">Đổi mật khẩu</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link" data-bs-toggle="pill" href="#username" role="tab">Thay đổi tên người dùng</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="pill" href="#avatar" role="tab">Thay đổi ảnh đại diện</a>
+                        </li>
+                    </ul>
                 </div>
-                <button type="submit" class="btn btn-primary">Cập nhật ảnh</button>
-            </form>
+            </div>
         </div>
 
-        <!-- User Information -->
-        <div class="mb-4">
-            <h5>Tên người dùng</h5>
-            <p>{{ session.username or 'Chưa đăng nhập' }}</p>
-            <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#editUsernameModal">Chỉnh sửa</button>
-        </div>
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-body tab-content">
 
-        <!-- Change Password -->
-        <div class="mb-4">
-            <h5>Đổi mật khẩu</h5>
-            <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#changePasswordModal">Đổi mật khẩu</button>
-        </div>
+                    <!-- Info Tab -->
+                    <div class="tab-pane fade show active" id="info" role="tabpanel">
+                        <h4 class="card-title mb-4">THÔNG TIN TÀI KHOẢN</h4>
+                        <div class="d-flex align-items-center mb-4">
+                            <img src="{{ url_for('static', filename='images/' + session.username + '_avt.jpg') }}"
+                                 alt="Profile Picture"
+                                 class="rounded-circle me-3"
+                                 style="width: 80px; height: 80px; object-fit: cover; border: 1px solid #e0e0e0;"
+                                 onerror="this.src='{{ url_for('static', filename='images/default.jpg') }}'">
+                            <div>
+                                <h5 class="mb-1">{{ session.username or 'Nguyễn Văn A' }}</h5>
+                                <p class="text-muted mb-0">Thành viên từ 2023</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <p class="mb-1 text-muted">Họ và tên</p>
+                                <p class="mb-0">Nguyễn Đức Diễn</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <p class="mb-1 text-muted">Email</p>
+                                <p class="mb-0">diennd190@gmail.com</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <p class="mb-1 text-muted">Quốc gia</p>
+                                <p class="mb-0">Việt Nam</p>
+                            </div>
+                        </div>
+                    </div>
 
-        <!-- Logout -->
-        <div class="mb-4">
-            <h5>Đăng xuất</h5>
-            <a href="{{ url_for('logout') }}" class="btn btn-danger">Đăng xuất</a>
+                    <!-- Change Password -->
+                    <div class="tab-pane fade" id="password" role="tabpanel">
+                        <h4 class="card-title mb-4">ĐỔI MẬT KHẨU</h4>
+                        <form action="{{ url_for('change_password') }}" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label">Mật khẩu hiện tại</label>
+                                <input type="password" class="form-control" name="current_password" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Mật khẩu mới</label>
+                                <input type="password" class="form-control" name="new_password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Cập nhật mật khẩu</button>
+                        </form>
+                    </div>
+
+                    <!-- Update Username -->
+                    <div class="tab-pane fade" id="username" role="tabpanel">
+                        <h4 class="card-title mb-4">THAY ĐỔI TÊN NGƯỜI DÙNG</h4>
+                        <form action="{{ url_for('update_username') }}" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label">Tên người dùng mới</label>
+                                <input type="text" class="form-control" name="new_username" required>
+                            </div>
+                            <button type="submit" class="btn btn-warning">Cập nhật tên người dùng</button>
+                        </form>
+                    </div>
+
+                    <!-- Upload Avatar -->
+                    <div class="tab-pane fade" id="avatar" role="tabpanel">
+                        <h4 class="card-title mb-4">THAY ĐỔI ẢNH ĐẠI DIỆN</h4>
+                        <form action="{{ url_for('upload_profile_picture') }}" method="POST" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <input type="file" class="form-control" name="profile_picture" accept="image/*" required>
+                            </div>
+                            <button type="submit" class="btn btn-success">Tải ảnh lên</button>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Modal for Editing Username -->
-<div class="modal fade" id="editUsernameModal" tabindex="-1" aria-labelledby="editUsernameModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content" style="background-color: #2E3856; color: #ffffff;">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editUsernameModalLabel">Chỉnh sửa tên người dùng</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form method="POST" action="{{ url_for('update_username') }}">
-                    <div class="mb-3">
-                        <label for="newUsername" class="form-label">Tên người dùng mới</label>
-                        <input type="text" class="form-control" id="newUsername" name="new_username" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Cập nhật</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+<style>
+    .card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
 
-<!-- Modal for Changing Password -->
-<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content" style="background-color: #2E3856; color: #ffffff;">
-            <div class="modal-header">
-                <h5 class="modal-title" id="changePasswordModalLabel">Đổi mật khẩu</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form method="POST" action="{{ url_for('change_password') }}">
-                    <div class="mb-3">
-                        <label for="currentPassword" class="form-label">Mật khẩu hiện tại</label>
-                        <input type="password" class="form-control" id="currentPassword" name="current_password" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="newPassword" class="form-label">Mật khẩu mới</label>
-                        <input type="password" class="form-control" id="newPassword" name="new_password" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Cập nhật</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-<script>
-    // Gán URL mặc định vào một biến JavaScript
-    const defaultImageUrl = "{{ url_for('static', filename='images/default.jpg') }}";
-    // Xử lý lỗi tải ảnh
-    document.getElementById('profile-picture').onerror = function() {
-        this.src = defaultImageUrl;
-    };
-</script>
+    .nav-link.active {
+        border-left: 3px solid #4e73df;
+        padding-left: 13px;
+        background-color: #f8f9fa;
+    }
+
+    .nav-link {
+        padding: 8px 16px;
+        color: #333;
+    }
+
+    .nav-link:hover {
+        background-color: #f1f1f1;
+    }
+</style>
 {% endblock %}

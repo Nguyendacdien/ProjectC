@@ -3,82 +3,79 @@
 {% block content %}
 <div class="container my-5">
     <!-- Recipe Name & Description -->
-    <!-- Recipe Title + Dropdown (Right Aligned) -->
-    <div class="mb-4 pt-4 d-flex justify-content-between align-items-start">
-        <div class="flex-grow-1 text-center">
-            <h2 class="fw-bold text-uppercase mb-2" style="color: #333; font-size: 2.5rem;">{{ recipe.name.title() }}</h2>
-            <p class="lead" style="color: #333;">{{ recipe.description }}</p>
+    <div class="mb-4 pt-4">
+        <div class="text-center">
+            <h2 class="fw-bold text-capitalize mb-2" style="color: #333; font-size: 2.5rem; font-family: 'MJ Glamour Coquette', serif;">{{ recipe.name }}</h2>
+        </div>
+        <div class="mb-3" style="padding-left: 1rem;">
+            <p class="lead" style="color: #333; font-size: 1rem; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif; line-height: 1.5; text-align: left; margin-bottom: 0.5rem;">{{ recipe.description }}</p>
+        </div>
+    </div>
+
+    <!-- Like/Dislike and Dropdown in one row -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex">
+            <form method="POST" action="{{ url_for('view_recipe', username=username, recipe_id=recipe.recipeID) }}" style="display: inline;">
+                <input type="hidden" name="vote" value="upvote">
+                <button type="submit" class="btn btn-outline-secondary btn-sm me-2" style="font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;"
+                        onmouseover="this.style.backgroundColor='#e9ecef'; this.style.color='#000000';"
+                        onmouseout="this.style.backgroundColor=''; this.style.color='#000000';">
+                    <i class="bi bi-hand-thumbs-up"></i> ({{ recipe.upvotes | default(0) }})
+                </button>
+            </form>
+            <form method="POST" action="{{ url_for('view_recipe', username=username, recipe_id=recipe.recipeID) }}" style="display: inline;">
+                <input type="hidden" name="vote" value="downvote">
+                <button type="submit" class="btn btn-outline-secondary btn-sm" style="font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;"
+                        onmouseover="this.style.backgroundColor='#e9ecef'; this.style.color='#000000';"
+                        onmouseout="this.style.backgroundColor=''; this.style.color='#000000';">
+                    <i class="bi bi-hand-thumbs-down"></i> ({{ recipe.downvotes | default(0) }})
+                </button>
+            </form>
         </div>
         
         {% if username == recipe.author %}
-            <div class="dropdown ms-3">
+            <div class="dropdown">
                 <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fa fa-ellipsis-v"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" style="background-color: #333333;">
-                    <li>
-                        <a class="dropdown-item"
-                        href="{{ url_for('edit_recipe', username=username, recipe_id=recipe.recipeID) }}"
-                        style="color: #ffffff;"
-                        onmouseover="this.style.backgroundColor='#e9ecef'; this.style.color='#000000';"
-                        onmouseout="this.style.backgroundColor=''; this.style.color='#ffffff';">
-                            Edit
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item"
-                        href="{{ url_for('delete_recipe', username=username, recipe_id=recipe.recipeID) }}"
-                        onclick="return confirm('Delete this recipe?')"
-                        style="color: #ffffff;"
-                        onmouseover="this.style.backgroundColor='#e9ecef'; this.style.color='#000000';"
-                        onmouseout="this.style.backgroundColor=''; this.style.color='#ffffff';">
-                            Delete
-                        </a>
-                    </li>
+                    <li><a class="dropdown-item" href="{{ url_for('edit_recipe', username=username, recipe_id=recipe.recipeID) }}" style="color: #ffffff; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;" onmouseover="this.style.backgroundColor='#e9ecef'; this.style.color='#000000';" onmouseout="this.style.backgroundColor=''; this.style.color='#ffffff';">Edit</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('delete_recipe', username=username, recipe_id=recipe.recipeID) }}" onclick="return confirm('Delete this recipe?')" style="color: #ffffff; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;" onmouseover="this.style.backgroundColor='#e9ecef'; this.style.color='#000000';" onmouseout="this.style.backgroundColor=''; this.style.color='#ffffff';">Delete</a></li>
                 </ul>
             </div>
         {% endif %}
     </div>
 
     <div class="row">
-        <!-- Left Column -->
         <div class="col-md-6">
-            <!-- Ingredients -->
             <div class="mb-4">
-                <h5 class="fw-bold mb-3" style="color: #333;">Ingredients</h5>
-                <ul class="list-unstyled" style="color: #333; padding-left: 1rem;">
+                <h5 class="fw-bold mb-3 text-uppercase" style="color: #333; font-size: 1.25rem; font-family: Georgia, serif;">Ingredients</h5>
+                <ul class="list-unstyled" style="color: #333; padding-left: 1rem; font-size: 0.875rem; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;">
                     {% for ingredient in recipe.ingredients %}
                         <li>- {{ ingredient }}</li>
                     {% endfor %}
                 </ul>
             </div>
-
-            <!-- Instructions -->
             <div class="mb-4">
-                <h5 class="fw-bold mb-3" style="color: #333;">Instructions</h5>
-                <ol style="color: #333; padding-left: 1.2rem;">
+                <h5 class="fw-bold mb-3 text-uppercase" style="color: #333; font-size: 1.25rem; font-family: Georgia, serif;">Instructions</h5>
+                <ol style="color: #333; padding-left: 2rem; font-size: 0.875rem; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;">
                     {% for step in recipe.instructions %}
                         <li class="mb-2">{{ step }}</li>
                     {% endfor %}
                 </ol>
             </div>
-
-            <!-- Allergens -->
             <div class="mb-4">
-                <h5 class="fw-bold mb-3" style="color: #333;">Allergens</h5>
-                <p style="color: #333;">{{ recipe.allergens | join(', ') if recipe.allergens else 'None' }}</p>
+                <h5 class="fw-bold mb-3 text-uppercase" style="color: #333; font-size: 1.25rem; font-family: Georgia, serif;">Allergens</h5>
+                <p style="color: #333; padding-left: 1rem; font-size: 0.875rem; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;">{{ recipe.allergens | join(', ') if recipe.allergens else 'None' }}</p>
             </div>
         </div>
-
-        <!-- Right Column: Carousel -->
         <div class="col-md-6">
-            <!-- Carousel for All Images -->
             {% if image_urls and image_urls|length > 0 %}
-                <div id="carouselExample" class="carousel slide" style="width: 100%; margin-left: 20px;">
+                <div id="carouselExample" class="carousel slide" style="width: 100%; margin-left: 50px;">
                     <div class="carousel-inner">
                         {% for url in image_urls %}
                             <div class="carousel-item {% if loop.first %}active{% endif %}">
-                                <img src="{{ url }}" class="d-block mx-auto carousel-image" style="width: 300px; height: 400px; object-fit: cover; border-radius: 10px;" alt="Recipe Image {{ loop.index }}">
+                                <img src="{{ url }}" class="d-block mx-auto carousel-image" style="width: 400px; height: 600px; object-fit: cover; border-radius: 10px;" alt="Recipe Image {{ loop.index }}">
                             </div>
                         {% endfor %}
                     </div>
@@ -95,75 +92,193 @@
         </div>
     </div>
 
-    <!-- Time & Meta Information -->
-    <div class="d-flex justify-content-center text-center my-5 flex-wrap" style="color: #333;">
+    <div class="d-flex justify-content-center text-center my-5 flex-wrap" style="color: #333; font-size: 1rem; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;">
         <div class="px-4 border-end">
             <div>Serves</div>
-            <div class="fw-bold">{{ recipe.serves if recipe.serves is defined else 'N/A' }}</div>
+            <div style="font-size: 0.75rem;">{{ recipe.serves if recipe.serves is defined else 'N/A' }}</div>
         </div>
         <div class="px-4 border-end">
             <div>Prep Time</div>
-            <div class="fw-bold">{{ recipe.prep_time if recipe.prep_time is defined else 0 }} mins</div>
+            <div style="font-size: 0.75rem;">{{ recipe.prep_time if recipe.prep_time is defined else 0 }} mins</div>
         </div>
         <div class="px-4 border-end">
             <div>Cook Time</div>
-            <div class="fw-bold">{{ recipe.cook_time if recipe.cook_time is defined else 0 }} mins</div>
+            <div style="font-size: 0.75rem;">{{ recipe.cook_time if recipe.cook_time is defined else 0 }} mins</div>
         </div>
         <div class="px-4 border-end">
             <div>Total Time</div>
-            <div class="fw-bold">{{ recipe.total_time if recipe.total_time is defined else 0 }} mins</div>
+            <div style="font-size: 0.75rem;">{{ recipe.total_time if recipe.total_time is defined else 0 }} mins</div>
         </div>
         <div class="px-4 border-end">
             <div>Country</div>
-            <div class="fw-bold">{{ recipe.country.title() }}</div>
+            <div style="font-size: 0.75rem;">{{ recipe.country.title() }}</div>
         </div>
         <div class="px-4">
             <div>Author</div>
-            <div class="fw-bold">{{ recipe.author.title() }}</div>
+            <div style="font-size: 0.75rem;">{{ recipe.author.title() }}</div>
         </div>
     </div>
 
     <!-- Comments Section -->
-    <div class="mt-4" style="color: #333;">
-        <h5 class="fw-bold mb-3">Comments</h5>
+    <div class="mt-4" style="color: #333; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;">
+        <h5 class="fw-bold mb-3 text-uppercase" style="color: #333; font-size: 1.25rem; font-family: Georgia, serif;">Comments</h5>
 
-        <!-- Comment Form First -->
         {% if recipe.is_public %}
             <form method="POST" class="mb-4">
                 {{ comment_form.csrf_token }}
                 <div class="mb-2">
-                    {{ comment_form.comment.label(class_="form-label", style="color: #333;") }}
-                    {{ comment_form.comment(class_="form-control form-control-sm", rows="2", placeholder="Leave your comment here...") }}
+                    {{ comment_form.comment.label(class_="form-label", style="color: #333; font-size: 0.875rem; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;") }}
+                    {{ comment_form.comment(class_="form-control form-control-sm", rows="2", placeholder="Leave your comment here...", style="font-size: 0.875rem; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;") }}
                     {% for error in comment_form.comment.errors %}
-                        <div class="text-danger">{{ error }}</div>
+                        <div class="text-danger" style="font-size: 0.75rem; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;">{{ error }}</div>
                     {% endfor %}
                 </div>
-                <button type="submit" class="btn btn-primary btn-sm">Submit</button>
+                <button type="submit" class="btn btn-primary btn-sm" style="font-size: 0.875rem; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;">Submit</button>
             </form>
         {% else %}
-            <p>Comments are only allowed for public recipes.</p>
+            <p style="font-size: 0.875rem; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;">Comments are only allowed for public recipes.</p>
         {% endif %}
 
-        <!-- Existing Comments Below -->
         {% if recipe.comments %}
             {% for comment in recipe.comments %}
-                <div style="margin-bottom: 10px;">
-                    <strong>{{ comment.username.title() }}</strong> 
-                    <span style="font-size: 0.9rem; color: #666;">({{ comment.timestamp }})</span>
-                    <p>{{ comment.comment_text }}</p>
+                <div class="d-flex align-items-start mb-3" style="margin-bottom: 10px; font-size: 0.875rem; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;">
+                    <img src="{{ comment.avatar_url }}" alt="{{ comment.username }}'s avatar" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 10px;">
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ comment.username.title() }}</strong> 
+                                <span style="font-size: 0.75rem; color: #666;">({{ comment.timestamp }})</span>
+                            </div>
+                            {% if username == comment.username %}
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                                        <i class="fa fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" style="font-size: 0.75rem;">
+                                        <li>
+                                            <button class="dropdown-item edit-btn" data-comment-id="{{ comment._id }}" style="font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;">
+                                                <i class="bi bi-pen-fill"></i> Edit
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item delete-btn" data-comment-id="{{ comment._id }}" style="font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;">
+                                                <i class="bi bi-archive"></i> Delete
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="comment-text mt-1" data-comment-id="{{ comment._id }}">{{ comment.comment_text }}</div>
+                        {% if username == comment.username %}
+                            <form method="POST" class="edit-form" data-comment-id="{{ comment._id }}" style="display: none; margin-top: 5px;">
+                                {{ comment_form.csrf_token }}
+                                <textarea name="edit_comment_{{ comment._id }}" class="form-control form-control-sm" rows="2" style="font-size: 0.875rem; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;">{{ comment.comment_text }}</textarea>
+                                <button type="submit" class="btn btn-primary btn-sm mt-2" style="font-size: 0.75rem;">Submit</button>
+                                <button type="button" class="btn btn-secondary btn-sm mt-2 cancel-edit" style="font-size: 0.75rem;">Cancel</button>
+                            </form>
+                        {% endif %}
+                    </div>
                 </div>
             {% endfor %}
         {% else %}
-            <p>No comments yet.</p>
+            <p style="font-size: 0.875rem; font-family: '1FTV VIP Pragnea Regular', Arial, Helvetica, sans-serif;">No comments yet.</p>
         {% endif %}
     </div>
 </div>
 
-<!-- Bootstrap Carousel Scripts -->
 <script>
+    // Truyền username và recipe.recipeID từ Jinja2 sang JavaScript
+    const username = "{{ username }}";
+    const recipeId = "{{ recipe.recipeID }}";
+
     const myCarousel = new bootstrap.Carousel('#carouselExample', {
-        interval: false, // Tắt hoàn toàn tự động chuyển
+        interval: false,
         wrap: true
+    });
+
+    document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const commentId = this.getAttribute('data-comment-id');
+            const commentText = document.querySelector(`.comment-text[data-comment-id="${commentId}"]`);
+            const editForm = document.querySelector(`.edit-form[data-comment-id="${commentId}"]`);
+            commentText.style.display = 'none';
+            editForm.style.display = 'block';
+        });
+    });
+
+    document.querySelectorAll('.cancel-edit').forEach(button => {
+        button.addEventListener('click', function() {
+            const commentId = this.closest('.edit-form').getAttribute('data-comment-id');
+            const commentText = document.querySelector(`.comment-text[data-comment-id="${commentId}"]`);
+            const editForm = document.querySelector(`.edit-form[data-comment-id="${commentId}"]`);
+            commentText.style.display = 'block';
+            editForm.style.display = 'none';
+        });
+    });
+
+    document.querySelectorAll('.edit-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const commentId = this.getAttribute('data-comment-id');
+            const newCommentText = this.querySelector(`textarea[name="edit_comment_${commentId}"]`).value;
+            const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+            console.log('Editing comment:', { commentId, newCommentText, csrfToken });
+            if (newCommentText.trim()) {
+                fetch(`/${username}/view_recipe/${recipeId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `edit_comment_${commentId}=${encodeURIComponent(newCommentText)}&csrf_token=${encodeURIComponent(csrfToken)}`
+                })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Response data:', data);
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.message || 'Error updating comment.');
+                    }
+                })
+                .catch(error => console.error('Fetch error:', error));
+            } else {
+                alert('Comment cannot be empty.');
+            }
+        });
+    });
+
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const commentId = this.getAttribute('data-comment-id');
+            const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+            console.log('Deleting comment:', { commentId, csrfToken });
+            if (confirm('Are you sure you want to delete this comment?')) {
+                fetch(`/${username}/view_recipe/${recipeId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `delete_comment_${commentId}=1&csrf_token=${encodeURIComponent(csrfToken)}`
+                })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Response data:', data);
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.message || 'Error deleting comment.');
+                    }
+                })
+                .catch(error => console.error('Fetch error:', error));
+            }
+        });
     });
 </script>
 {% endblock %}
