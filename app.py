@@ -190,22 +190,25 @@ def save_book(username, book_id):
     return redirect(url_for('my_books', username=username))  
 @app.route('/<username>/unsave_book/<book_id>', methods=['POST'])
 def unsave_book(username, book_id):
+    if 'username' not in session or session['username'] != username:
+        return jsonify({'success': False, 'message': 'Vui lòng đăng nhập.'}), 400
+
     try:
         book_id_obj = ObjectId(book_id)
-        # Kiểm tra xem người dùng có tồn tại và có sách đã lưu không
-        user = mongo.db.users.find_one({'username': username})
-        if not user or 'saved_books' not in user or book_id_obj not in user['saved_books']:
-            return jsonify({'success': False, 'message': 'Sách không tồn tại trong danh sách đã lưu.'}), 400
+        book = mongo.db.books.find_one({"_id": book_id_obj})
+        if not book:
+            return jsonify({'success': False, 'message': 'Không tìm thấy sách.'}), 400
 
-        # Xóa sách khỏi danh sách đã lưu
-        result = mongo.db.users.update_one(
-            {'username': username},
-            {'$pull': {'saved_books': book_id_obj}}
-        )
-
-        if result.modified_count > 0:
-            return jsonify({'success': True})
-        return jsonify({'success': False, 'message': 'Không thể xóa sách.'}), 400
+        if username in book.get("username", []):
+            result = mongo.db.books.update_one(
+                {"_id": book_id_obj},
+                {"$pull": {"username": username}}
+            )
+            if result.modified_count > 0:
+                return jsonify({'success': True})
+            return jsonify({'success': False, 'message': 'Không thể xóa sách khỏi danh sách đã lưu.'}), 400
+        else:
+            return jsonify({'success': False, 'message': 'Sách không nằm trong danh sách đã lưu của bạn.'}), 400
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'}), 400
 @app.route('/my_books/<username>')

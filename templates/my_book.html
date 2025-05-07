@@ -45,17 +45,16 @@
     // Xử lý sự kiện bấm nút Bỏ lưu
     document.querySelectorAll('.unsave-btn').forEach(button => {
         button.addEventListener('click', function(e) {
-            e.preventDefault(); // Ngăn hành vi mặc định
+            e.preventDefault();
             const bookId = this.getAttribute('data-book-id');
-            console.log('Unsaving book:', { bookId }); // Debug log (không dùng CSRF tạm thời)
+            console.log('Unsaving book:', { bookId });
 
             if (confirm('Bạn có chắc muốn bỏ lưu cuốn sách này không?')) {
                 fetch(`/${username}/unsave_book/${bookId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    // Tạm thời bỏ CSRF token, thêm lại nếu cần
+                    }
                 })
                 .then(response => {
                     console.log('Response status:', response.status);
@@ -64,7 +63,7 @@
                 .then(data => {
                     console.log('Response data:', data);
                     if (data.success) {
-                        location.reload(); // Tải lại trang để cập nhật danh sách
+                        location.reload();
                     } else {
                         alert(data.message || 'Lỗi khi bỏ lưu sách.');
                     }
